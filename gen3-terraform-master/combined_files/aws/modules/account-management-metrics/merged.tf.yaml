@@ -1,0 +1,293 @@
+resource:
+- aws_cloudwatch_log_metric_filter:
+    metric_one:
+      log_group_name: ${var.cwl_group}
+      metric_transformation:
+      - name: SecurityGroupEventCount
+        namespace: CloudTrailMetrics
+        value: '1'
+      name: SecurityGroupChangesMetricFilter
+      pattern: '{($.eventName = AuthorizeSecurityGroupIngress) || ($.eventName = AuthorizeSecurityGroupEgress)
+        || ($.eventName = RevokeSecurityGroupIngress) || ($.eventName = RevokeSecurityGroupEgress)
+        || ($.eventName = CreateSecurityGroup) || ($.eventName = DeleteSecurityGroup)}'
+- aws_cloudwatch_log_metric_filter:
+    metric_two:
+      log_group_name: ${var.cwl_group}
+      metric_transformation:
+      - name: NetworkAclEventCount
+        namespace: CloudTrailMetrics
+        value: '1'
+      name: NetworkAclChangesMetricFilter
+      pattern: '{($.eventName = CreateNetworkAcl) || ($.eventName = CreateNetworkAclEntry)
+        || ($.eventName = DeleteNetworkAcl) || ($.eventName = DeleteNetworkAclEntry)
+        || ($.eventName = ReplaceNetworkAclEntry) || ($.eventName = ReplaceNetworkAclAssociation)}'
+- aws_cloudwatch_log_metric_filter:
+    metric_three:
+      log_group_name: ${var.cwl_group}
+      metric_transformation:
+      - name: GatewayEventCount
+        namespace: CloudTrailMetrics
+        value: '1'
+      name: GatewayChangesMetricFilter
+      pattern: '{($.eventName = CreateCustomerGateway) || ($.eventName = DeleteCustomerGateway)
+        || ($.eventName = AttachInternetGateway) || ($.eventName = CreateInternetGateway)
+        || ($.eventName = DeleteInternetGateway) || ($.eventName = DetachInternetGateway)}'
+- aws_cloudwatch_log_metric_filter:
+    metric_four:
+      log_group_name: ${var.cwl_group}
+      metric_transformation:
+      - name: VpcEventCount
+        namespace: CloudTrailMetrics
+        value: '1'
+      name: VpcChangesMetricFilter
+      pattern: '{($.eventName = CreateVpc) || ($.eventName = DeleteVpc) || ($.eventName
+        = ModifyVpcAttribute) || ($.eventName = AcceptVpcPeeringConnection) || ($.eventName
+        = CreateVpcPeeringConnection) || ($.eventName = DeleteVpcPeeringConnection)
+        || ($.eventName = RejectVpcPeeringConnection) || ($.eventName = AttachClassicLinkVpc)
+        || ($.eventName = DetachClassicLinkVpc) || ($.eventName = DisableVpcClassicLink)
+        || ($.eventName = EnableVpcClassicLink)}'
+- aws_cloudwatch_log_metric_filter:
+    metric_five:
+      log_group_name: ${var.cwl_group}
+      metric_transformation:
+      - name: EC2InstanceEventCount
+        namespace: CloudTrailMetrics
+        value: '1'
+      name: EC2InstanceChangesMetricFilter
+      pattern: '{($.eventName = RunInstances) || ($.eventName = RebootInstances) ||
+        ($.eventName = StartInstances) || ($.eventName = StopInstances) || ($.eventName
+        = TerminateInstances)}'
+- aws_cloudwatch_log_metric_filter:
+    metric_six:
+      log_group_name: ${var.cwl_group}
+      metric_transformation:
+      - name: EC2LargeInstanceEventCount
+        namespace: CloudTrailMetrics
+        value: '1'
+      name: EC2LargeInstanceChangesMetricFilter
+      pattern: '{($.eventName = RunInstances) && (($.requestParameters.instanceType
+        = *.8xlarge) || ($.requestParameters.instanceType = *.4xlarge) || ($.requestParameters.instanceType
+        = *.12xlarge) || ($.requestParameters.instanceType = *.24xlarge) || ($.requestParameters.instanceType
+        = *.16xlarge) || ($.requestParameters = *.10xlarge) || ($.requestParameters
+        = *.32xlarge) || ($.requestParameters = *.9xlarge) || ($.requestParameters
+        = *.16xlarge) || ($.requestParameters = *.18xlarge))}'
+- aws_cloudwatch_log_metric_filter:
+    metric_seven:
+      log_group_name: ${var.cwl_group}
+      metric_transformation:
+      - name: CloudTrailEventCount
+        namespace: CloudTrailMetrics
+        value: '1'
+      name: CloudTrailChangesMetricFilter
+      pattern: '{($.eventName = CreateTrail) || ($.eventName = UpdateTrail) || ($.eventName
+        = DeleteTrail) || ($.eventName = StartLogging) || ($.eventName = StopLogging)}'
+- aws_cloudwatch_log_metric_filter:
+    metric_eight:
+      log_group_name: ${var.cwl_group}
+      metric_transformation:
+      - name: ConsoleSignInFailureCount
+        namespace: CloudTrailMetrics
+        value: '1'
+      name: ConsoleSignInFailuresMetricFilter
+      pattern: '{($.eventName = ConsoleLogin) && ($.errorMessage = "Failed authentication")}'
+- aws_cloudwatch_log_metric_filter:
+    metric_nine:
+      log_group_name: ${var.cwl_group}
+      metric_transformation:
+      - name: AuthorizationFailureCount
+        namespace: CloudTrailMetrics
+        value: '1'
+      name: AuthorizationFailuresMetricFilter
+      pattern: '{($.errorCode = "*UnauthorizedOperation") || ($.errorCode = "AccessDenied*")}'
+- aws_cloudwatch_log_metric_filter:
+    metric_ten:
+      log_group_name: ${var.cwl_group}
+      metric_transformation:
+      - name: IAMPolicyEventCount
+        namespace: CloudTrailMetrics
+        value: '1'
+      name: IAMPolicyChangesMetricFilter
+      pattern: '{($.eventName=DeleteGroupPolicy)||($.eventName=DeleteRolePolicy)||($.eventName=DeleteUserPolicy)||($.eventName=PutGroupPolicy)||($.eventName=PutRolePolicy)||($.eventName=PutUserPolicy)||($.eventName=CreatePolicy)||($.eventName=DeletePolicy)||($.eventName=CreatePolicyVersion)||($.eventName=DeletePolicyVersion)||($.eventName=AttachRolePolicy)||($.eventName=DetachRolePolicy)||($.eventName=AttachUserPolicy)||($.eventName=DetachUserPolicy)||($.eventName=AttachGroupPolicy)||($.eventName=DetachGroupPolicy)}'
+- aws_cloudwatch_log_metric_filter:
+    metric_eleven:
+      log_group_name: ${var.cwl_group}
+      metric_transformation:
+      - name: NewUserCount
+        namespace: CloudTrailMetrics
+        value: '1'
+      name: IAMNewUser
+      pattern: '{($.eventName=CreateUser)}'
+- aws_cloudwatch_log_metric_filter:
+    metric_twelve:
+      log_group_name: ${var.cwl_group}
+      metric_transformation:
+      - name: OutsideRegionCount
+        namespace: CloudTrailMetrics
+        value: '1'
+      name: OutsideRegion
+      pattern: '{($.awsRegion!=us-east-1 && $.eventName!=Describe* && $.eventName!=*Get*
+        && $.eventType!=AwsConsoleSignIn &&$.eventName!=*List* && $.eventName!=Assume*
+        && $.eventName!=*Login*)}'
+---
+resource:
+- aws_cloudwatch_metric_alarm:
+    alarm_one:
+      alarm_actions: ${var.alarm_actions}
+      alarm_description: Alarms when an API call is made to create, update or delete
+        a Security Group.
+      alarm_name: SecurityGroupChangesAlarm
+      comparison_operator: GreaterThanOrEqualToThreshold
+      evaluation_periods: '1'
+      metric_name: SecurityGroupEventCount
+      namespace: CloudTrailMetrics
+      period: '120'
+      statistic: Sum
+      threshold: '1'
+- aws_cloudwatch_metric_alarm:
+    alarm_two:
+      alarm_actions: ${var.alarm_actions}
+      alarm_description: Alarms when an API call is made to create, update or delete
+        a Network ACL.
+      alarm_name: NetworkAclChangesAlarm
+      comparison_operator: GreaterThanOrEqualToThreshold
+      evaluation_periods: '1'
+      metric_name: NetworkAclEventCount
+      namespace: CloudTrailMetrics
+      period: '300'
+      statistic: Sum
+      threshold: '1'
+- aws_cloudwatch_metric_alarm:
+    alarm_three:
+      alarm_actions: ${var.alarm_actions}
+      alarm_description: Alarms when an API call is made to create, update or delete
+        a Customer or Internet Gateway.
+      alarm_name: GatewayChangesAlarm
+      comparison_operator: GreaterThanOrEqualToThreshold
+      evaluation_periods: '1'
+      metric_name: GatewayEventCount
+      namespace: CloudTrailMetrics
+      period: '300'
+      statistic: Sum
+      threshold: '1'
+- aws_cloudwatch_metric_alarm:
+    alarm_four:
+      alarm_actions: ${var.alarm_actions}
+      alarm_description: Alarms when an API call is made to create, update or delete
+        a Customer or Internet Gateway.
+      alarm_name: VpcChangesAlarm
+      comparison_operator: GreaterThanOrEqualToThreshold
+      evaluation_periods: '1'
+      metric_name: VpcEventCount
+      namespace: CloudTrailMetrics
+      period: '300'
+      statistic: Sum
+      threshold: '1'
+- aws_cloudwatch_metric_alarm:
+    alarm_five:
+      alarm_actions: ${var.alarm_actions}
+      alarm_description: Alarms when an API call is made to create, terminate, start,
+        stop or reboot an EC2 instance.
+      alarm_name: EC2LargeInstanceChangesMetricFilter
+      comparison_operator: GreaterThanOrEqualToThreshold
+      evaluation_periods: '1'
+      metric_name: EC2InstanceEventCount
+      namespace: CloudTrailMetrics
+      period: '300'
+      statistic: Sum
+      threshold: '1'
+- aws_cloudwatch_metric_alarm:
+    alarm_six:
+      alarm_actions: ${var.alarm_actions}
+      alarm_description: Alarms when an API call is made to create, terminate, start,
+        stop or reboot a 4x or 8x-large EC2 instance.
+      alarm_name: EC2LargeInstanceChangesAlarm
+      comparison_operator: GreaterThanOrEqualToThreshold
+      evaluation_periods: '1'
+      metric_name: EC2LargeInstanceEventCount
+      namespace: CloudTrailMetrics
+      period: '300'
+      statistic: Sum
+      threshold: '1'
+- aws_cloudwatch_metric_alarm:
+    alarm_seven:
+      alarm_actions: ${var.alarm_actions}
+      alarm_description: Alarms when an API call is made to create, update or delete
+        a CloudTrail trail, or to start or stop logging to a trail.
+      alarm_name: CloudTrailChangesAlarm
+      comparison_operator: GreaterThanOrEqualToThreshold
+      evaluation_periods: '1'
+      metric_name: CloudTrailEventCount
+      namespace: CloudTrailMetrics
+      period: '300'
+      statistic: Sum
+      threshold: '1'
+- aws_cloudwatch_metric_alarm:
+    alarm_eight:
+      alarm_actions: ${var.alarm_actions}
+      alarm_description: Alarms when an unauthenticated API call is made to sign into
+        the console.
+      alarm_name: ConsoleSignInFailuresAlarm
+      comparison_operator: GreaterThanOrEqualToThreshold
+      evaluation_periods: '1'
+      metric_name: ConsoleSignInFailureCount
+      namespace: CloudTrailMetrics
+      period: '300'
+      statistic: Sum
+      threshold: '1'
+- aws_cloudwatch_metric_alarm:
+    alarm_nine:
+      alarm_actions: ${var.alarm_actions}
+      alarm_description: Alarms when an unauthorized API call is made.
+      alarm_name: AuthorizationFailuresAlarm
+      comparison_operator: GreaterThanOrEqualToThreshold
+      evaluation_periods: '1'
+      metric_name: AuthorizationFailureCount
+      namespace: CloudTrailMetrics
+      period: '300'
+      statistic: Sum
+      threshold: '1'
+- aws_cloudwatch_metric_alarm:
+    alarm_ten:
+      alarm_actions: ${var.alarm_actions}
+      alarm_description: Alarms when an API call is made to change an IAM policy.
+      alarm_name: IAMPolicyChangesAlarm
+      comparison_operator: GreaterThanOrEqualToThreshold
+      evaluation_periods: '1'
+      metric_name: IAMPolicyEventCount
+      namespace: CloudTrailMetrics
+      period: '300'
+      statistic: Sum
+      threshold: '1'
+- aws_cloudwatch_metric_alarm:
+    alarm_eleven:
+      alarm_actions: ${var.alarm_actions}
+      alarm_description: Alarms when a new user is created.
+      alarm_name: NewUserAlarm
+      comparison_operator: GreaterThanOrEqualToThreshold
+      evaluation_periods: '1'
+      metric_name: NewUserCount
+      namespace: CloudTrailMetrics
+      period: '300'
+      statistic: Sum
+      threshold: '1'
+- aws_cloudwatch_metric_alarm:
+    alarm_twelve:
+      alarm_actions: ${var.alarm_actions}
+      alarm_description: Alarms when events happen outside region.
+      alarm_name: OutsideRegionAlarm
+      comparison_operator: GreaterThanOrEqualToThreshold
+      evaluation_periods: '1'
+      metric_name: OutsideRegionCount
+      namespace: CloudTrailMetrics
+      period: '300'
+      statistic: Sum
+      threshold: '1'
+---
+variable:
+- alarm_actions:
+    default:
+    - arn:aws:sns:us-east-1:433568766270:planx-csoc-alerts-for-bsd-security
+    description: Action for when alarms go into and ALERT state
+- cwl_group:
+    default: ''
+    description: The CloudWatchLog group where filter are going to take place

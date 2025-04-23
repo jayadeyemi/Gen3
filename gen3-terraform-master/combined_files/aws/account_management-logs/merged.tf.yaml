@@ -1,0 +1,26 @@
+output:
+- cloudwatch_log_group:
+    value: ${module.logging.cloudwatch_log_group}
+- s3_bucket:
+    value: ${module.logging.s3_bucket}
+---
+module:
+- logging:
+    account_name: ${var.account_name}
+    alarm_actions: ${var.alarm_actions}
+    csoc_account_id: ${var.csoc_account_id}
+    source: ../modules/account-management-logs
+terraform:
+- backend:
+  - s3:
+      encrypt: 'true'
+  required_providers:
+  - aws:
+      source: hashicorp/aws
+      version: ~> 5.0
+---
+variable:
+- csoc_account_id:
+    default: '433568766270'
+- account_name: {}
+- alarm_actions: {}

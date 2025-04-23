@@ -1,0 +1,90 @@
+data:
+- aws_secretsmanager_secret:
+    dd_keys:
+      arn: ${var.datadog_secrets_manager_arn}
+- aws_secretsmanager_secret_version:
+    secrets:
+      secret_id: ${data.aws_secretsmanager_secret.dd_keys.id}
+---
+locals:
+- api_key: '${var.secrets_manager_enabled ? jsondecode(data.aws_secretsmanager_secret_version.secrets.secret_string)["api-key"]
+    : var.api_key}'
+  api_url: '${var.secrets_manager_enabled ? jsondecode(data.aws_secretsmanager_secret_version.secrets.secret_string)["url"]
+    : var.api_url}'
+  app_key: '${var.secrets_manager_enabled ? jsondecode(data.aws_secretsmanager_secret_version.secrets.secret_string)["application-key"]
+    : var.app_key}'
+provider:
+- datadog:
+    api_key: ${local.api_key}
+    api_url: ${local.api_url}
+    app_key: ${local.app_key}
+resource:
+- datadog_synthetics_test:
+    api_tests:
+      dynamic:
+      - api_step:
+          content:
+          - allow_failure: true
+            assertion:
+            - operator: is
+              target: ${api_step.value.target_status_code}
+              type: statusCode
+            - operator: lessThan
+              target: ${api_step.value.target_response_time}
+              type: responseTime
+            is_critical: true
+            name: ${api_step.value.name}${var.commons_name}
+            request_definition:
+            - method: GET
+              url: ${var.commons_url}${api_step.value.endpoint}
+            retry:
+            - count: 3
+              interval: 3000
+            subtype: http
+          for_each: ${var.test_definitions}
+      locations: ${var.locations}
+      message: '@slack-gpe-alarms Service failure on ${var.commons_name} ${var.project_slack_channel}'
+      name: ${var.commons_name} tests
+      options_list:
+      - min_failure_duration: 300
+        tick_every: ${var.test_run_frequency_secs}
+      status: ${var.status}
+      subtype: multi
+      tags: ${var.tags}
+      type: api
+terraform:
+- required_providers:
+  - datadog:
+      source: DataDog/datadog
+---
+variable:
+- api_key:
+    default: ''
+- app_key:
+    default: ''
+- api_url:
+    default: ''
+- secrets_manager_enabled:
+    default: false
+- datadog_secrets_manager_arn:
+    default: ''
+- commons_url:
+    default: ''
+- commons_name:
+    default: ''
+- project_slack_channel:
+    default: ''
+- test_definitions:
+    default: []
+    type: '${list(object({"endpoint": "string", "target_status_code": "string", "target_response_time":
+      "string", "name": "string", "message": "string"}))}'
+- locations:
+    default: []
+    type: ${list(string)}
+- tags:
+    default: []
+    type: ${list(string)}
+- status:
+    default: ''
+- test_run_frequency_secs:
+    default: ''

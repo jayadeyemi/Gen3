@@ -1,0 +1,118 @@
+output:
+- aurora_cluster_writer_endpoint:
+    description: Aurora cluster writer instance endpoint
+    value: ${module.aurora[0].aurora_cluster_writer_endpoint}
+- aurora_cluster_reader_endpoint:
+    description: Aurora cluster reader endpoint
+    value: ${module.aurora[0].aurora_cluster_reader_endpoint}
+- aurora_cluster_master_username:
+    description: Aurora cluster master username
+    value: ${module.aurora[0].aurora_cluster_master_username}
+- aurora_cluster_master_password:
+    description: Aurora cluster master user's password
+    sensitive: true
+    value: ${module.aurora[0].aurora_cluster_master_password}
+---
+module:
+- aurora:
+    apply_immediate: ${var.apply_immediate}
+    backup_retention_period: ${var.backup_retention_period}
+    cluster_engine: ${var.cluster_engine}
+    cluster_engine_version: ${var.cluster_engine_version}
+    cluster_identifier: ${var.cluster_identifier}
+    cluster_instance_class: ${var.cluster_instance_class}
+    cluster_instance_identifier: ${var.cluster_instance_identifier}
+    count: '${var.deploy_aurora ? 1 : 0}'
+    db_kms_key_id: ${var.db_kms_key_id}
+    engine_mode: ${var.engine_mode}
+    final_snapshot_identifier: ${var.final_snapshot_identifier}
+    master_username: ${var.master_username}
+    password_length: ${var.password_length}
+    preferred_backup_window: ${var.preferred_backup_window}
+    serverlessv2_scaling_max_capacity: ${var.serverlessv2_scaling_max_capacity}
+    serverlessv2_scaling_min_capacity: ${var.serverlessv2_scaling_min_capacity}
+    skip_final_snapshot: ${var.skip_final_snapshot}
+    source: ../modules/aurora
+    storage_encrypted: ${var.storage_encrypted}
+    vpc_name: ${var.vpc_name}
+provider:
+- aws: {}
+terraform:
+- backend:
+  - s3:
+      encrypt: 'true'
+---
+variable:
+- vpc_name: {}
+- cluster_identifier:
+    default: aurora-cluster
+    description: Cluster Identifier
+    type: string
+- cluster_instance_identifier:
+    default: aurora-cluster-instance
+    description: Cluster Instance Identifier
+    type: string
+- cluster_instance_class:
+    default: db.serverless
+    description: Cluster Instance Class
+    type: string
+- cluster_engine:
+    default: aurora-postgresql
+    description: Aurora database engine type
+    type: string
+- cluster_engine_version:
+    default: '13.7'
+    description: Aurora database engine version.
+    type: string
+- master_username:
+    default: postgres
+    description: Master DB username
+    type: string
+- storage_encrypted:
+    default: true
+    description: Specifies whether storage encryption is enabled
+    type: bool
+- apply_immediate:
+    default: true
+    description: Instruct the service to apply the change immediately. This can result
+      in a brief downtime as the server reboots. See the AWS Docs on RDS Maintenance
+      for more information
+    type: bool
+- engine_mode:
+    default: provisioned
+    description: use provisioned for Serverless v2 RDS cluster
+    type: string
+- serverlessv2_scaling_min_capacity:
+    default: '0.5'
+    description: Serverless v2 RDS cluster minimum scaling capacity in ACUs
+    type: string
+- serverlessv2_scaling_max_capacity:
+    default: '10.0'
+    description: Serverless v2 RDS cluster maximum scaling capacity in ACUs
+    type: string
+- skip_final_snapshot:
+    default: false
+    description: Determines whether a final DB snapshot is created before the DB cluster
+      is deleted
+    type: bool
+- final_snapshot_identifier:
+    default: aurora-cluster-snapshot-final
+    description: The name of your final DB snapshot when this DB cluster is deleted
+    type: string
+- backup_retention_period:
+    default: 10
+    description: The days to retain backups for
+    type: number
+- preferred_backup_window:
+    default: 02:00-03:00
+    description: The daily time range during which automated backups are created if
+      automated backups are enabled using the BackupRetentionPeriod parameter
+    type: string
+- password_length:
+    default: 12
+    description: The length of the password string
+    type: number
+- deploy_aurora:
+    default: true
+- db_kms_key_id:
+    default: ''

@@ -1,0 +1,24 @@
+resource:
+- aws_kms_key:
+    kms_key: {}
+- aws_kms_key_policy:
+    example:
+      key_id: ${aws_kms_key.kms_key.id}
+      policy: '${jsonencode({"Statement": [{"Action": "kms:*", "Effect": "Allow",
+        "Principal": {"AWS": "*"}, "Resource": "*", "Sid": "Enable IAM User Permissions"},
+        {"Action": "${var.action}", "Effect": "Allow", "Principal": {"AWS": "${var.account_ids}"},
+        "Resource": "*", "Sid": "Allow use of the key"}], "Version": "2012-10-17"})}'
+---
+output:
+- kms_arn:
+    value: ${aws_kms_key.kms_key.arn}
+---
+variable:
+- account_ids:
+    description: List of account ids to grant access to the bucket
+    type: ${list(string)}
+- action:
+    default:
+    - kms:Decrypt
+    description: List of actions to grant access to the bucket
+    type: ${list(string)}

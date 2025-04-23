@@ -1,0 +1,74 @@
+resource:
+- aws_wafv2_web_acl:
+    waf:
+      default_action:
+      - allow:
+        - {}
+      description: WAF per environment for tailored security.
+      dynamic:
+      - rule:
+          content:
+          - name: AWS-${rule.value.managed_rule_group_name}
+            override_action:
+            - none:
+              - {}
+            priority: ${rule.value.priority}
+            statement:
+            - managed_rule_group_statement:
+              - dynamic:
+                - rule_action_override:
+                    content:
+                    - action_to_use:
+                      - count:
+                        - {}
+                      name: ${rule_action_override.value}
+                    for_each: '${length(rule.value.override_to_count) > 0 ? rule.value.override_to_count
+                      : []}'
+                name: ${rule.value.managed_rule_group_name}
+                vendor_name: AWS
+            visibility_config:
+            - cloudwatch_metrics_enabled: true
+              metric_name: AWS-${rule.value.managed_rule_group_name}
+              sampled_requests_enabled: true
+          for_each: ${concat(var.base_rules, var.additional_rules)}
+      name: ${var.vpc_name}-waf
+      scope: REGIONAL
+      tags:
+        Environment: ${var.vpc_name}
+      visibility_config:
+      - cloudwatch_metrics_enabled: false
+        metric_name: WebAclMetrics
+        sampled_requests_enabled: false
+---
+output:
+- waf_arn:
+    description: WAF arn - annotate the cluster ingress
+    value: ${aws_wafv2_web_acl.waf.arn}
+---
+variable:
+- vpc_name: {}
+- base_rules:
+    default:
+    - managed_rule_group_name: AWSManagedRulesAmazonIpReputationList
+      override_to_count:
+      - AWSManagedReconnaissanceList
+      priority: 0
+    - managed_rule_group_name: AWSManagedRulesPHPRuleSet
+      override_to_count:
+      - PHPHighRiskMethodsVariables_HEADER
+      - PHPHighRiskMethodsVariables_QUERYSTRING
+      - PHPHighRiskMethodsVariables_BODY
+      priority: 1
+    - managed_rule_group_name: AWSManagedRulesWordPressRuleSet
+      override_to_count:
+      - WordPressExploitableCommands_QUERYSTRING
+      - WordPressExploitablePaths_URIPATH
+      priority: 2
+    description: Base AWS Managed Rules
+    type: '${list(object({"managed_rule_group_name": "string", "priority": "number",
+      "override_to_count": "${list(string)}"}))}'
+- additional_rules:
+    default: []
+    description: Additional AWS Managed Rules
+    type: '${list(object({"managed_rule_group_name": "string", "priority": "number",
+      "override_to_count": "${list(string)}"}))}'

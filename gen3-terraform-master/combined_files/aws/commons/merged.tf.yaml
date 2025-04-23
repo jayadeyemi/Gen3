@@ -1,0 +1,1345 @@
+module:
+- aurora:
+    apply_immediate: ${var.apply_immediate}
+    backup_retention_period: ${var.backup_retention_period}
+    cluster_engine: ${var.cluster_engine}
+    cluster_engine_version: ${var.cluster_engine_version}
+    cluster_identifier: ${var.cluster_identifier}
+    cluster_instance_class: ${var.cluster_instance_class}
+    cluster_instance_identifier: ${var.cluster_instance_identifier}
+    count: '${var.deploy_aurora ? 1 : 0}'
+    db_kms_key_id: ${var.db_kms_key_id}
+    depends_on:
+    - ${module.cdis_vpc.vpc_id}
+    - ${module.cdis_vpc.vpc_peering_id}
+    engine_mode: ${var.engine_mode}
+    final_snapshot_identifier: ${var.final_snapshot_identifier}
+    master_username: ${var.master_username}
+    password_length: ${var.password_length}
+    preferred_backup_window: ${var.preferred_backup_window}
+    secrets_manager_enabled: ${var.secrets_manager_enabled}
+    serverlessv2_scaling_max_capacity: ${var.serverlessv2_scaling_max_capacity}
+    serverlessv2_scaling_min_capacity: ${var.serverlessv2_scaling_min_capacity}
+    skip_final_snapshot: ${var.skip_final_snapshot}
+    source: ../modules/aurora
+    storage_encrypted: ${var.storage_encrypted}
+    vpc_name: ${var.vpc_name}
+---
+locals:
+- db_fence_address: '${var.deploy_aurora ? module.aurora[0].aurora_cluster_writer_endpoint
+    : var.deploy_fence_db && var.deploy_rds ? aws_db_instance.db_fence[0].address
+    : ""}'
+  db_indexd_address: '${var.deploy_aurora ? module.aurora[0].aurora_cluster_writer_endpoint
+    : var.deploy_indexd_db && var.deploy_rds ? aws_db_instance.db_indexd[0].address
+    : ""}'
+  db_peregrine_address: '${var.deploy_aurora ? module.aurora[0].aurora_cluster_writer_endpoint
+    : var.deploy_sheepdog_db && var.deploy_rds ? aws_db_instance.db_sheepdog[0].address
+    : ""}'
+  db_sheepdog_address: '${var.deploy_aurora ? module.aurora[0].aurora_cluster_writer_endpoint
+    : var.deploy_sheepdog_db && var.deploy_rds ? aws_db_instance.db_sheepdog[0].address
+    : ""}'
+module:
+- cdis_vpc:
+    activation_id: ${var.activation_id}
+    ami_account_id: ${var.ami_account_id}
+    branch: ${var.branch}
+    commons_log_retention: ${var.commons_log_retention}
+    csoc_account_id: ${var.csoc_account_id}
+    csoc_managed: ${var.csoc_managed}
+    customer_id: ${var.customer_id}
+    deploy_cloud_trail: ${var.deploy_cloud_trail}
+    deploy_ha_squid: ${var.deploy_ha_squid}
+    deploy_single_proxy: ${var.deploy_single_proxy}
+    fence-bot_bucket_access_arns: ${var.fence-bot_bucket_access_arns}
+    fips: ${var.fips}
+    network_expansion: ${var.network_expansion}
+    organization_name: ${var.organization_name}
+    peering_cidr: ${var.peering_cidr}
+    peering_vpc_id: ${var.peering_vpc_id}
+    secondary_cidr_block: ${var.secondary_cidr_block}
+    send_logs_to_csoc: ${var.send_logs_to_csoc}
+    single_squid_instance_type: ${var.single_squid_instance_type}
+    slack_webhook: ${var.slack_webhook}
+    source: ../modules/vpc
+    squid_bootstrap_script: ${var.ha-squid_bootstrap_script}
+    squid_cluster_desired_capasity: ${var.ha-squid_cluster_desired_capasity}
+    squid_cluster_max_size: ${var.ha-squid_cluster_max_size}
+    squid_cluster_min_size: ${var.ha-squid_cluster_min_size}
+    squid_extra_vars: ${var.ha-squid_extra_vars}
+    squid_image_search_criteria: ${var.squid_image_search_criteria}
+    squid_instance_drive_size: ${var.ha-squid_instance_drive_size}
+    squid_instance_type: ${var.ha-squid_instance_type}
+    ssh_key_name: ${aws_key_pair.automation_dev.key_name}
+    vpc_cidr_block: ${var.vpc_cidr_block}
+    vpc_flow_logs: ${var.vpc_flow_logs}
+    vpc_flow_traffic: ${var.vpc_flow_traffic}
+    vpc_name: ${var.vpc_name}
+- config_files:
+    aws_user_key: ${module.cdis_vpc.es_user_key}
+    aws_user_key_id: ${module.cdis_vpc.es_user_key_id}
+    db_fence_address: ${local.db_fence_address}
+    db_fence_name: ${var.fence_database_name}
+    db_fence_password: '${var.db_password_fence != "" ? var.db_password_fence : random_password.fence_password.result}'
+    db_indexd_address: ${local.db_indexd_address}
+    db_indexd_name: ${var.indexd_database_name}
+    db_indexd_password: '${var.db_password_indexd != "" ? var.db_password_indexd :
+      random_password.indexd_password.result}'
+    db_indexd_username: ${var.indexd_db_username}
+    db_peregrine_address: ${local.db_peregrine_address}
+    db_peregrine_password: '${var.db_password_peregrine != "" ? var.db_password_peregrine
+      : random_password.peregrine_password.result}'
+    db_sheepdog_address: ${local.db_sheepdog_address}
+    db_sheepdog_name: ${var.sheepdog_database_name}
+    db_sheepdog_password: '${var.db_password_sheepdog != "" ? var.db_password_sheepdog
+      : random_password.sheepdog_password.result}'
+    db_sheepdog_username: ${var.sheepdog_db_username}
+    gitops_path: ${var.gitops_path}
+    google_client_id: ${var.google_client_id}
+    google_client_secret: ${var.google_client_secret}
+    hmac_encryption_key: '${var.hmac_encryption_key != "" ? var.hmac_encryption_key
+      : base64encode(random_password.hmac_encryption_key.result)}'
+    hostname: ${var.hostname}
+    indexd_prefix: ${var.indexd_prefix}
+    mailgun_api_key: ${var.mailgun_api_key}
+    mailgun_api_url: ${var.mailgun_api_url}
+    mailgun_smtp_host: ${var.mailgun_smtp_host}
+    sheepdog_indexd_password: '${var.sheepdog_indexd_password != "" ? var.sheepdog_indexd_password
+      : random_password.sheepdog_indexd_password.result}'
+    sheepdog_oauth2_client_id: ${var.sheepdog_oauth2_client_id}
+    sheepdog_oauth2_client_secret: ${var.sheepdog_oauth2_client_secret}
+    sheepdog_secret_key: '${var.sheepdog_secret_key != "" ? var.sheepdog_secret_key
+      : random_password.sheepdog_secret_key.result}'
+    source: ../../shared/modules/k8s_configs
+    ssl_certificate_id: ${var.aws_cert_name}
+    vpc_name: ${var.vpc_name}
+- csoc_peering_connection:
+    count: '${var.csoc_peering ? 1 : 0}'
+    csoc_cidr: ${var.peering_cidr}
+    csoc_vpc_id: ${var.peering_vpc_id}
+    organization_name: ${var.organization_name}
+    pcx_id: ${module.cdis_vpc.vpc_peering_id}
+    providers:
+      aws: ${aws.csoc}
+    route_table_name: ${var.route_table_name}
+    source: ../modules/csoc_peering
+    vpc_cidr_block: ${var.vpc_cidr_block}
+    vpc_name: ${var.vpc_name}
+provider:
+- kubernetes:
+    cluster_ca_certificate: ${base64decode(module.eks[0].cluster_certificate_authority_data)}
+    exec:
+    - api_version: client.authentication.k8s.io/v1beta1
+      args:
+      - eks
+      - get-token
+      - --cluster-name
+      - ${module.eks[0].cluster_name}
+      - --role-arn
+      - arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.iam_role_name}
+      command: aws
+    host: ${module.eks[0].cluster_endpoint}
+- helm:
+    kubernetes:
+    - cluster_ca_certificate: ${base64decode(module.eks[0].cluster_certificate_authority_data)}
+      exec:
+      - api_version: client.authentication.k8s.io/v1beta1
+        args:
+        - eks
+        - get-token
+        - --cluster-name
+        - ${module.eks[0].cluster_name}
+        - --role-arn
+        - arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.iam_role_name}
+        command: aws
+      host: ${module.eks[0].cluster_endpoint}
+- kubectl:
+    apply_retry_count: 5
+    cluster_ca_certificate: ${base64decode(module.eks[0].cluster_certificate_authority_data)}
+    exec:
+    - api_version: client.authentication.k8s.io/v1beta1
+      args:
+      - eks
+      - get-token
+      - --cluster-name
+      - ${module.eks[0].cluster_name}
+      - --role-arn
+      - arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.iam_role_name}
+      command: aws
+    host: ${module.eks[0].cluster_endpoint}
+    load_config_file: false
+resource:
+- aws_route_table:
+    private_kube:
+      tags:
+        Environment: ${var.vpc_name}
+        Name: private_kube
+        Organization: ${var.organization_name}
+      vpc_id: ${module.cdis_vpc.vpc_id}
+- aws_route:
+    for_peering:
+      count: '${var.csoc_managed ? 1 : 0}'
+      depends_on:
+      - ${aws_route_table.private_kube}
+      destination_cidr_block: ${var.peering_cidr}
+      route_table_id: ${aws_route_table.private_kube.id}
+      vpc_peering_connection_id: ${module.cdis_vpc.vpc_peering_id}
+- aws_route_table_association:
+    private_kube:
+      route_table_id: ${aws_route_table.private_kube.id}
+      subnet_id: ${aws_subnet.private_kube.id}
+- aws_subnet:
+    private_kube:
+      availability_zone: ${data.aws_availability_zones.available.names[0]}
+      cidr_block: '${var.network_expansion ? cidrsubnet(var.vpc_cidr_block, 5, 0)
+        : cidrsubnet(var.vpc_cidr_block, 4, 2)}'
+      lifecycle:
+      - ignore_changes:
+        - ${tags}
+        - ${availability_zone}
+      map_public_ip_on_launch: false
+      tags: '${tomap({"Name": "int_services", "Organization": "${var.organization_name}",
+        "Environment": "${var.vpc_name}"})}'
+      vpc_id: ${module.cdis_vpc.vpc_id}
+- aws_subnet:
+    private_db_alt:
+      availability_zone: ${data.aws_availability_zones.available.names[1]}
+      cidr_block: '${var.network_expansion ? cidrsubnet(var.vpc_cidr_block, 5, 1)
+        : cidrsubnet(var.vpc_cidr_block, 4, 3)}'
+      lifecycle:
+      - ignore_changes:
+        - ${tags}
+        - ${availability_zone}
+      map_public_ip_on_launch: false
+      tags:
+        Environment: ${var.vpc_name}
+        Name: private_db_alt
+        Organization: ${var.organization_name}
+      vpc_id: ${module.cdis_vpc.vpc_id}
+- aws_db_subnet_group:
+    private_group:
+      description: Private subnet group
+      name: ${var.vpc_name}_private_group
+      subnet_ids:
+      - ${aws_subnet.private_kube.id}
+      - ${aws_subnet.private_db_alt.id}
+      tags:
+        Environment: ${var.vpc_name}
+        Name: Private subnet group
+        Organization: ${var.organization_name}
+terraform:
+- backend:
+  - s3:
+      encrypt: 'true'
+  required_providers:
+  - aws:
+      source: hashicorp/aws
+      version: ~> 5.0
+    kubectl:
+      source: gavinbunney/kubectl
+---
+data:
+- aws_availability_zones:
+    available: {}
+- aws_caller_identity:
+    current: {}
+---
+module:
+- eks:
+    activation_id: ${var.activation_id}
+    availability_zones: ${var.availability_zones}
+    bootstrap_script: ${var.bootstrap_script}
+    ci_run: ${var.ci_run}
+    cidrs_to_route_to_gw: ${var.cidrs_to_route_to_gw}
+    count: '${var.deploy_eks ? 1 : 0}'
+    csoc_account_id: ${var.csoc_account_id}
+    csoc_managed: ${var.csoc_managed}
+    customer_id: ${var.customer_id}
+    depends_on:
+    - ${module.cdis_vpc.vpc_id}
+    - ${module.cdis_vpc.vpc_peering_id}
+    - ${module.cdis_vpc.squid_auto}
+    deploy_karpenter_in_k8s: ${var.deploy_karpenter_in_k8s}
+    deploy_workflow: ${var.deploy_workflow}
+    domain_test: ${var.domain_test}
+    dual_proxy: ${var.dual_proxy}
+    ec2_keyname: ${var.ec2_keyname}
+    eks_public_access: ${var.eks_public_access}
+    eks_version: ${var.eks_version}
+    enable_vpc_endpoints: ${var.enable_vpc_endpoints}
+    fips: ${var.fips}
+    fips_ami_kms: ${var.fips_ami_kms}
+    fips_enabled_ami: ${var.fips_enabled_ami}
+    ha_squid: ${var.deploy_ha_squid}
+    iam-serviceaccount: ${var.iam-serviceaccount}
+    instance_type: ${var.instance_type}
+    jupyter_asg_desired_capacity: ${var.jupyter_asg_desired_capacity}
+    jupyter_asg_max_size: ${var.jupyter_asg_max_size}
+    jupyter_asg_min_size: ${var.jupyter_asg_min_size}
+    jupyter_bootstrap_script: ${var.jupyter_bootstrap_script}
+    jupyter_instance_type: ${var.jupyter_instance_type}
+    jupyter_worker_drive_size: ${var.jupyter_worker_drive_size}
+    k8s_bootstrap_resources: ${var.k8s_bootstrap_resources}
+    karpenter_version: ${var.karpenter_version}
+    kernel: ${var.kernel}
+    oidc_eks_thumbprint: ${var.oidc_eks_thumbprint}
+    organization_name: ${var.organization_name}
+    peering_cidr: ${var.peering_cidr}
+    peering_vpc_id: ${var.peering_vpc_id}
+    secondary_cidr_block: ${var.secondary_cidr_block}
+    single_az_for_jupyter: ${var.single_az_for_jupyter}
+    sns_topic_arn: ${var.sns_topic_arn}
+    source: ../modules/eks
+    spot_linked_role: ${var.spot_linked_role}
+    use_asg: ${var.use_asg}
+    use_karpenter: ${var.use_karpenter}
+    users_policy: ${var.users_policy}
+    vpc_id: ${module.cdis_vpc.vpc_id}
+    vpc_name: ${var.vpc_name}
+    worker_drive_size: ${var.worker_drive_size}
+    workers_subnet_size: ${var.workers_subnet_size}
+    workflow_asg_desired_capacity: ${var.workflow_asg_desired_capacity}
+    workflow_asg_max_size: ${var.workflow_asg_max_size}
+    workflow_asg_min_size: ${var.workflow_asg_min_size}
+    workflow_bootstrap_script: ${var.workflow_bootstrap_script}
+    workflow_instance_type: ${var.workflow_instance_type}
+    workflow_worker_drive_size: ${var.workflow_worker_drive_size}
+---
+module:
+- commons_vpc_es:
+    count: '${var.deploy_es ? 1 : 0}'
+    depends_on:
+    - ${module.cdis_vpc.vpc_id}
+    - ${module.cdis_vpc.vpc_peering_id}
+    ebs_volume_size_gb: ${var.ebs_volume_size_gb}
+    encryption: ${var.encryption}
+    es_linked_role: ${var.es_linked_role}
+    es_name: ${var.es_name}
+    es_version: ${var.es_version}
+    instance_count: ${var.es_instance_count}
+    instance_type: ${var.es_instance_type}
+    organization_name: ${var.organization_name}
+    role_arn: '${var.deploy_es_role ? aws_iam_role.esproxy-role[0].arn : ""}'
+    source: ../modules/commons-vpc-es
+    vpc_id: ${module.cdis_vpc.vpc_id}
+    vpc_name: ${var.vpc_name}
+resource:
+- aws_iam_role:
+    esproxy-role:
+      assume_role_policy: "{\n    \"Version\": \"2012-10-17\",\n    \"Statement\"\
+        : [\n        {\n            \"Effect\": \"Allow\",\n            \"Principal\"\
+        : {\n                \"Service\": \"ec2.amazonaws.com\"\n            },\n\
+        \            \"Action\": \"sts:AssumeRole\"\n        },\n        {\n     \
+        \       \"Sid\": \"\",\n            \"Effect\": \"Allow\",\n            \"\
+        Principal\": {\n                \"Federated\": \"${module.eks[0].cluster_oidc_provider_arn}\"\
+        \n            },\n            \"Action\": \"sts:AssumeRoleWithWebIdentity\"\
+        ,\n            \"Condition\": {\n                \"ForAllValues:StringLike\"\
+        : {\n                    \"${module.eks[0].oidc_provider_arn}:sub\": [\n \
+        \                       \"system:serviceaccount:*:esproxy-sa\"\n         \
+        \           ],\n                    \"${module.eks[0].oidc_provider_arn}:aud\"\
+        : \"sts.amazonaws.com\"\n                }\n            }\n        }\n   \
+        \ ]\n}"
+      count: '${var.deploy_es_role ? 1 : 0}'
+      description: Role for ES proxy service account for ${var.vpc_name}
+      name: ${var.vpc_name}-esproxy-sa
+      path: /gen3-service/
+---
+module:
+- gen3_deployment:
+    ambassador_enabled: ${var.ambassador_enabled}
+    arborist_enabled: ${var.arborist_enabled}
+    argo_enabled: ${var.argo_enabled}
+    audit_enabled: ${var.audit_enabled}
+    aurora_hostname: ${module.aurora[0].aurora_cluster_writer_endpoint}
+    aurora_password: ${module.aurora[0].aurora_cluster_master_password}
+    aurora_username: ${module.aurora[0].aurora_cluster_master_username}
+    aws-es-proxy_enabled: ${var.aws-es-proxy_enabled}
+    cluster_ca_cert: ${module.eks[0].cluster_certificate_authority_data}
+    cluster_endpoint: ${module.eks[0].cluster_endpoint}
+    cluster_name: ${module.eks[0].cluster_name}
+    count: '${var.deploy_gen3 && var.deploy_aurora ? 1 : 0}'
+    dbgap_enabled: ${var.dbgap_enabled}
+    dd_enabled: ${var.dd_enabled}
+    dictionary_url: ${var.dictionary_url}
+    dispatcher_job_number: ${var.dispatcher_job_number}
+    fence_access_key: ${var.fence_access_key}
+    fence_config_path: ${var.fence_config_path}
+    fence_enabled: ${var.fence_enabled}
+    fence_secret_key: ${var.fence_secret_key}
+    gitops_path: ${var.gitops_path}
+    google_client_id: ${var.google_client_id}
+    google_client_secret: ${var.google_client_secret}
+    guppy_enabled: ${var.guppy_enabled}
+    hatchery_enabled: ${var.hatchery_enabled}
+    hostname: ${var.hostname}
+    indexd_enabled: ${var.indexd_enabled}
+    indexd_prefix: ${var.indexd_prefix}
+    ingress_enabled: ${var.ingress_enabled}
+    manifestservice_enabled: ${var.manifestservice_enabled}
+    metadata_enabled: ${var.metadata_enabled}
+    namespace: ${var.namespace}
+    netpolicy_enabled: ${var.netpolicy_enabled}
+    peregrine_enabled: ${var.peregrine_enabled}
+    pidgin_enabled: ${var.pidgin_enabled}
+    portal_enabled: ${var.portal_enabled}
+    public_datasets: ${var.public_datasets}
+    requestor_enabled: ${var.requestor_enabled}
+    revproxy_arn: ${var.revproxy_arn}
+    revproxy_enabled: ${var.revproxy_enabled}
+    sheepdog_enabled: ${var.sheepdog_enabled}
+    slack_send_dbgap: ${var.slack_send_dbgap}
+    slack_webhook: ${var.slack_webhook}
+    source: ../../gen3
+    ssjdispatcher_enabled: ${var.ssjdispatcher_enabled}
+    tier_access_level: ${var.tier_access_level}
+    tier_access_limit: ${var.tier_access_limit}
+    upload_bucket: ${var.upload_bucket}
+    usersync_enabled: ${var.usersync_enabled}
+    usersync_schedule: ${var.usersync_schedule}
+    useryaml_path: ${var.useryaml_path}
+    useryaml_s3_path: ${var.useryaml_s3_path}
+    wts_enabled: ${var.wts_enabled}
+resource:
+- helm_release:
+    argocd:
+      chart: argo-cd
+      count: '${var.k8s_bootstrap_resources && var.deploy_argocd ? 1 : 0}'
+      create_namespace: true
+      name: argocd
+      namespace: argocd
+      repository: https://argoproj.github.io/argo-helm
+      values:
+      - 'server.basehref: "/argocd/"'
+      version: ${var.argocd_version}
+- helm_release:
+    external-secrets:
+      chart: external-secrets
+      count: '${var.k8s_bootstrap_resources && var.deploy_external_secrets_operator
+        ? 1 : 0}'
+      create_namespace: true
+      name: external-secrets
+      namespace: external-secrets
+      repository: https://charts.external-secrets.io
+      values:
+      - "serviceAccount:\n  create: true\n  name: external-secrets\nsyncPolicy:\n\
+        \  automated:\n    prune: true\n    selfHeal: true"
+      version: ${var.external_secrets_operator_version}
+---
+data:
+- aws_iam_policy_document:
+    configbucket_reader:
+      statement:
+      - actions:
+        - s3:Get*
+        - s3:List*
+        effect: Allow
+        resources:
+        - arn:aws:s3:::${var.users_bucket_name}
+        - arn:aws:s3:::${var.users_bucket_name}/${var.config_folder}/*
+        - arn:aws:s3:::qualys-agentpackage
+        - arn:aws:s3:::qualys-agentpackage/*
+locals:
+- pg_family_version: ${replace(var.engine_version, "/\\.[0-9]/", "")}
+resource:
+- aws_db_instance:
+    db_fence:
+      allocated_storage: ${var.fence_db_size}
+      allow_major_version_upgrade: ${var.fence_allow_major_version_upgrade}
+      auto_minor_version_upgrade: ${var.fence_auto_minor_version_upgrade}
+      backup_retention_period: ${var.fence_backup_retention_period}
+      backup_window: ${var.fence_backup_window}
+      count: '${var.deploy_fence_db && var.deploy_rds ? 1 : 0}'
+      db_name: ${var.fence_database_name}
+      db_subnet_group_name: ${aws_db_subnet_group.private_group.id}
+      engine: postgres
+      engine_version: ${var.engine_version}
+      final_snapshot_identifier: ${replace(var.vpc_name, "_", "-")}-fencedb
+      identifier: ${var.vpc_name}-fencedb
+      instance_class: ${var.fence_db_instance}
+      lifecycle:
+      - ignore_changes: ${all}
+        prevent_destroy: true
+      maintenance_window: ${var.fence_maintenance_window}
+      max_allocated_storage: ${var.fence_max_allocated_storage}
+      multi_az: ${var.fence_ha}
+      parameter_group_name: ${aws_db_parameter_group.rds-cdis-pg.name}
+      password: '${var.db_password_fence != "" ? var.db_password_fence : random_password.fence_password.result}'
+      snapshot_identifier: ${var.fence_snapshot}
+      storage_encrypted: ${var.rds_instance_storage_encrypted}
+      storage_type: gp2
+      tags:
+        Environment: ${var.vpc_name}
+        Organization: ${var.organization_name}
+      username: ${var.fence_db_username}
+      vpc_security_group_ids:
+      - ${module.cdis_vpc.security_group_local_id}
+- aws_db_instance:
+    db_sheepdog:
+      allocated_storage: ${var.sheepdog_db_size}
+      allow_major_version_upgrade: ${var.sheepdog_allow_major_version_upgrade}
+      auto_minor_version_upgrade: ${var.sheepdog_auto_minor_version_upgrade}
+      backup_retention_period: ${var.sheepdog_backup_retention_period}
+      backup_window: ${var.sheepdog_backup_window}
+      count: '${var.deploy_sheepdog_db && var.deploy_rds ? 1 : 0}'
+      db_name: ${var.sheepdog_database_name}
+      db_subnet_group_name: ${aws_db_subnet_group.private_group.id}
+      engine: postgres
+      engine_version: ${var.engine_version}
+      final_snapshot_identifier: ${replace(var.vpc_name, "_", "-")}-sheepdogdb
+      identifier: ${var.vpc_name}-sheepdog
+      instance_class: ${var.sheepdog_db_instance}
+      lifecycle:
+      - ignore_changes: ${all}
+        prevent_destroy: true
+      maintenance_window: ${var.sheepdog_maintenance_window}
+      max_allocated_storage: ${var.sheepdog_max_allocated_storage}
+      multi_az: ${var.sheepdog_ha}
+      parameter_group_name: ${aws_db_parameter_group.rds-cdis-pg.name}
+      password: '${var.db_password_sheepdog != "" ? var.db_password_sheepdog : random_password.sheepdog_password.result}'
+      snapshot_identifier: ${var.sheepdog_snapshot}
+      storage_encrypted: ${var.rds_instance_storage_encrypted}
+      storage_type: gp2
+      tags:
+        Environment: ${var.vpc_name}
+        Organization: ${var.organization_name}
+      username: ${var.sheepdog_db_username}
+      vpc_security_group_ids:
+      - ${module.cdis_vpc.security_group_local_id}
+- aws_db_instance:
+    db_indexd:
+      allocated_storage: ${var.indexd_db_size}
+      allow_major_version_upgrade: ${var.indexd_allow_major_version_upgrade}
+      auto_minor_version_upgrade: ${var.indexd_auto_minor_version_upgrade}
+      backup_retention_period: ${var.indexd_backup_retention_period}
+      backup_window: ${var.indexd_backup_window}
+      count: '${var.deploy_indexd_db && var.deploy_rds ? 1 : 0}'
+      db_name: ${var.indexd_database_name}
+      db_subnet_group_name: ${aws_db_subnet_group.private_group.id}
+      engine: postgres
+      engine_version: ${var.engine_version}
+      final_snapshot_identifier: ${replace(var.vpc_name, "_", "-")}-indexddb
+      identifier: ${var.vpc_name}-indexddb
+      instance_class: ${var.indexd_db_instance}
+      lifecycle:
+      - ignore_changes: ${all}
+        prevent_destroy: true
+      maintenance_window: ${var.indexd_maintenance_window}
+      max_allocated_storage: ${var.indexd_max_allocated_storage}
+      multi_az: ${var.indexd_ha}
+      parameter_group_name: ${aws_db_parameter_group.rds-cdis-pg.name}
+      password: '${var.db_password_indexd != "" ? var.db_password_indexd : random_password.indexd_password.result}'
+      snapshot_identifier: ${var.indexd_snapshot}
+      storage_encrypted: ${var.rds_instance_storage_encrypted}
+      storage_type: gp2
+      tags:
+        Environment: ${var.vpc_name}
+        Organization: ${var.organization_name}
+      username: ${var.indexd_db_username}
+      vpc_security_group_ids:
+      - ${module.cdis_vpc.security_group_local_id}
+- aws_db_parameter_group:
+    rds-cdis-pg:
+      family: postgres${local.pg_family_version}
+      lifecycle:
+      - ignore_changes: ${all}
+      name: ${var.vpc_name}-rds-cdis-pg
+      parameter:
+      - name: cpu_index_tuple_cost
+        value: '0.000005'
+      - name: cpu_tuple_cost
+        value: '0.7'
+      - name: log_duration
+        value: '1'
+      - name: log_min_duration_statement
+        value: '0'
+      - name: random_page_cost
+        value: '0.7'
+      - name: password_encryption
+        value: scram-sha-256
+- aws_kms_key:
+    kube_key:
+      description: encryption/decryption key for kubernete
+      enable_key_rotation: true
+      tags:
+        Environment: ${var.vpc_name}
+        Organization: ${var.organization_name}
+- aws_kms_alias:
+    kube_key:
+      name: alias/${var.vpc_name}-k8s
+      target_key_id: ${aws_kms_key.kube_key.key_id}
+- aws_key_pair:
+    automation_dev:
+      key_name: ${var.vpc_name}_automation_dev
+      public_key: ${var.kube_ssh_key}
+- aws_iam_policy:
+    configbucket_reader:
+      description: Read cdis-gen3-users/${var.config_folder}
+      lifecycle:
+      - ignore_changes:
+        - ${policy}
+      name: bucket_reader_cdis-gen3-users_${var.vpc_name}
+      policy: ${data.aws_iam_policy_document.configbucket_reader.json}
+---
+output:
+- aws_region:
+    value: ${var.aws_region}
+- vpc_name:
+    value: ${var.vpc_name}
+- vpc_cidr_block:
+    value: ${module.cdis_vpc.vpc_cidr_block}
+- indexd_rds_id:
+    value: ${aws_db_instance.db_indexd.*.identifier}
+- fence_rds_id:
+    value: ${aws_db_instance.db_fence.*.identifier}
+- sheepdog_rds_id:
+    value: ${aws_db_instance.db_sheepdog.*.identifier}
+- fence-bot_user_secret:
+    sensitive: true
+    value: ${module.cdis_vpc.fence-bot_secret}
+- fence-bot_user_id:
+    value: ${module.cdis_vpc.fence-bot_id}
+- data-bucket_name:
+    value: ${module.cdis_vpc.data-bucket_name}
+- kubeconfig:
+    sensitive: true
+    value: ${module.eks[0].kubeconfig}
+- config_map_aws_auth:
+    sensitive: true
+    value: ${module.eks[0].config_map_aws_auth}
+- eks_cluster_name:
+    value: ${module.eks[0].cluster_name}
+- eks_cluster_endpoint:
+    sensitive: true
+    value: ${module.eks[0].cluster_endpoint}
+- eks_cluster_ca_cert:
+    sensitive: true
+    value: ${module.eks[0].cluster_certificate_authority_data}
+- eks_oidc_arn:
+    value: ${module.eks[0].oidc_provider_arn}
+- cluster_oidc_provider_url:
+    value: ${module.eks[0].cluster_oidc_provider_url}
+- cluster_oidc_provider_arn:
+    value: ${module.eks[0].cluster_oidc_provider_arn}
+- opensearch_cluster_arn:
+    value: '${var.deploy_es ? module.commons_vpc_es[0].es_arn : null}'
+- aurora_cluster_writer_endpoint:
+    description: Aurora cluster writer instance endpoint
+    value: ${one(module.aurora[*].aurora_cluster_writer_endpoint)}
+- aurora_cluster_reader_endpoint:
+    description: Aurora cluster reader endpoint
+    value: ${one(module.aurora[*].aurora_cluster_reader_endpoint)}
+- aurora_cluster_master_username:
+    description: Aurora cluster master username
+    value: ${one(module.aurora[*].aurora_cluster_master_username)}
+- aurora_cluster_master_password:
+    description: Aurora cluster master user's password
+    sensitive: true
+    value: ${one(module.aurora[*].aurora_cluster_master_password)}
+- es_endpoint:
+    value: '${var.deploy_es ? module.commons_vpc_es[0].es_endpoint : null}'
+- waf_arn:
+    description: WAF arn - annotate the cluster ingress
+    value: '${var.deploy_waf ? module.aws_waf[0].waf_arn : null}'
+---
+resource:
+- random_password:
+    fence_password:
+      length: ${var.password_length}
+      special: false
+- random_password:
+    sheepdog_password:
+      length: ${var.password_length}
+      special: false
+- random_password:
+    peregrine_password:
+      length: ${var.password_length}
+      special: false
+- random_password:
+    indexd_password:
+      length: ${var.password_length}
+      special: false
+- random_password:
+    hmac_encryption_key:
+      length: 32
+      special: false
+- random_password:
+    sheepdog_secret_key:
+      length: 50
+      special: false
+- random_password:
+    sheepdog_indexd_password:
+      length: 32
+      special: false
+---
+provider:
+- aws: {}
+- aws:
+    alias: csoc
+terraform:
+- required_providers:
+  - kubectl:
+      source: gavinbunney/kubectl
+---
+locals:
+- cluster_name: ${replace(var.vpc_name, "-", "")}
+variable:
+- vpc_name:
+    default: Commons1
+- iam_role_name:
+    default: csoc_adminvm
+- vpc_cidr_block:
+    default: 172.24.17.0/20
+- vpc_flow_logs:
+    default: false
+- vpc_flow_traffic:
+    default: ALL
+- aws_region:
+    default: us-east-1
+- aws_cert_name:
+    default: AWS-CERTIFICATE-NAME
+- csoc_account_id:
+    default: '433568766270'
+- peering_cidr:
+    default: 10.128.0.0/20
+- fence_db_size:
+    default: 10
+- sheepdog_db_size:
+    default: 10
+- indexd_db_size:
+    default: 10
+- db_password_fence:
+    default: ''
+    sensitive: true
+- db_password_peregrine:
+    default: ''
+    sensitive: true
+- db_password_sheepdog:
+    default: ''
+    sensitive: true
+- db_password_indexd:
+    default: ''
+    sensitive: true
+- portal_app:
+    default: dev
+- fence_snapshot:
+    default: ''
+- peregrine_snapshot:
+    default: ''
+- sheepdog_snapshot:
+    default: ''
+- indexd_snapshot:
+    default: ''
+- fence_db_instance:
+    default: db.t3.small
+- sheepdog_db_instance:
+    default: db.t3.small
+- indexd_db_instance:
+    default: db.t3.small
+- hostname:
+    default: dev.bionimbus.org
+- kube_ssh_key:
+    default: ''
+- kube_additional_keys:
+    default: ''
+- hmac_encryption_key:
+    default: ''
+    sensitive: true
+- sheepdog_secret_key:
+    default: ''
+    sensitive: true
+- sheepdog_indexd_password:
+    default: ''
+    sensitive: true
+- sheepdog_oauth2_client_id:
+    default: ''
+    sensitive: true
+- config_folder:
+    default: dev
+- sheepdog_oauth2_client_secret:
+    default: ''
+    sensitive: true
+- ami_account_id:
+    default: '137112412989'
+- squid_image_search_criteria:
+    default: al2023-ami-*
+    description: Search criteria for squid AMI look up
+- peering_vpc_id:
+    default: vpc-e2b51d99
+- squid-nlb-endpointservice-name:
+    default: com.amazonaws.vpce.us-east-1.vpce-svc-0ce2261f708539011
+- slack_webhook:
+    default: ''
+    sensitive: true
+- secondary_slack_webhook:
+    default: ''
+    sensitive: true
+- alarm_threshold:
+    default: '85'
+- csoc_managed:
+    default: false
+- csoc_peering:
+    default: false
+- mailgun_api_key:
+    default: ''
+- mailgun_smtp_host:
+    default: smtp.mailgun.org
+- mailgun_api_url:
+    default: https://api.mailgun.net/v3/
+- fence_ha:
+    default: false
+- sheepdog_ha:
+    default: false
+- indexd_ha:
+    default: false
+- fence_maintenance_window:
+    default: SAT:09:00-SAT:09:59
+- sheepdog_maintenance_window:
+    default: SAT:10:00-SAT:10:59
+- indexd_maintenance_window:
+    default: SAT:11:00-SAT:11:59
+- fence_backup_retention_period:
+    default: '4'
+- sheepdog_backup_retention_period:
+    default: '4'
+- indexd_backup_retention_period:
+    default: '4'
+- fence_backup_window:
+    default: 06:00-06:59
+- sheepdog_backup_window:
+    default: 07:00-07:59
+- indexd_backup_window:
+    default: 08:00-08:59
+- engine_version:
+    default: '13'
+- fence_auto_minor_version_upgrade:
+    default: 'true'
+- indexd_auto_minor_version_upgrade:
+    default: 'true'
+- sheepdog_auto_minor_version_upgrade:
+    default: 'true'
+- users_bucket_name:
+    default: cdis-gen3-users
+- fence_database_name:
+    default: fence
+- sheepdog_database_name:
+    default: gdcapi
+- indexd_database_name:
+    default: indexd
+- fence_db_username:
+    default: fence_user
+- sheepdog_db_username:
+    default: sheepdog
+- indexd_db_username:
+    default: indexd_user
+- fence_allow_major_version_upgrade:
+    default: 'true'
+- sheepdog_allow_major_version_upgrade:
+    default: 'true'
+- indexd_allow_major_version_upgrade:
+    default: 'true'
+- ha-squid_instance_type:
+    default: t3.medium
+    description: Instance type for HA squid
+- ha-squid_instance_drive_size:
+    default: 25
+    description: Volume size for HA squid instances
+- deploy_single_proxy:
+    default: true
+    description: Single instance plus HA
+- ha-squid_bootstrap_script:
+    default: squid_running_on_docker.sh
+    description: Bootstrapt script for ha-squid instances
+- ha-squid_extra_vars:
+    default:
+    - squid_image=master
+    description: additional variables to pass along with the bootstrapscript
+    type: ${list(string)}
+- branch:
+    default: master
+    description: For testing purposes, when something else than the master
+- fence-bot_bucket_access_arns:
+    default: []
+    description: When fence bot has to access another bucket that wasn't created by
+      the VPC module
+- deploy_ha_squid:
+    default: false
+    description: Should you want to deploy HA-squid
+- ha-squid_cluster_desired_capasity:
+    default: 2
+    description: If ha squid is enabled and you want to set your own capasity
+- ha-squid_cluster_min_size:
+    default: 1
+    description: If ha squid is enabled and you want to set your own min size
+- ha-squid_cluster_max_size:
+    default: 3
+    description: If ha squid is enabled and you want to set your own max size
+- deploy_sheepdog_db:
+    default: true
+    description: Whether or not to deploy the database instance
+- deploy_fence_db:
+    default: true
+    description: Whether or not to deploy the database instance
+- deploy_indexd_db:
+    default: true
+    description: Whether or not to deploy the database instance
+- single_squid_instance_type:
+    default: t2.micro
+    description: Instance type for the single proxy instance
+- network_expansion:
+    default: false
+    description: Let k8s workers be on a /22 subnet per AZ
+- rds_instance_storage_encrypted:
+    default: true
+- fence_max_allocated_storage:
+    default: 0
+    description: Maximum allocated storage for autosacaling
+- sheepdog_max_allocated_storage:
+    default: 0
+    description: Maximum allocated storage for autosacaling
+- indexd_max_allocated_storage:
+    default: 0
+    description: Maximum allocated storage for autosacaling
+- activation_id:
+    default: ''
+    sensitive: true
+- customer_id:
+    default: ''
+    sensitive: true
+- fips:
+    default: false
+- ignore_fence_changes:
+    default:
+    - engine_version
+    - storage_encrypted
+    - identifier
+- ignore_sheepdog_changes:
+    default:
+    - engine_version
+    - storage_encrypted
+    - identifier
+- ignore_indexd_changes:
+    default:
+    - engine_version
+    - storage_encrypted
+    - identifier
+- prevent_fence_destroy:
+    default: true
+- prevent_sheepdog_destroy:
+    default: true
+- prevent_indexd_destroy:
+    default: true
+- deploy_alarms:
+    default: true
+- deploy_argocd:
+    default: true
+- argocd_version:
+    default: 7.8.2
+- deploy_external_secrets_operator:
+    default: true
+- external_secrets_operator_version:
+    default: 0.14.0
+- ec2_keyname:
+    default: someone@uchicago.edu
+- instance_type:
+    default: t3.large
+- jupyter_instance_type:
+    default: t3.large
+- workflow_instance_type:
+    default: t3.2xlarge
+- secondary_cidr_block:
+    default: ''
+- users_policy: {}
+- worker_drive_size:
+    default: 30
+- eks_version:
+    default: '1.31'
+- workers_subnet_size:
+    default: 24
+- bootstrap_script:
+    default: bootstrap-with-security-updates.sh
+- jupyter_bootstrap_script:
+    default: bootstrap-with-security-updates.sh
+- kernel:
+    default: N/A
+- jupyter_worker_drive_size:
+    default: 30
+- workflow_bootstrap_script:
+    default: bootstrap.sh
+- workflow_worker_drive_size:
+    default: 30
+- cidrs_to_route_to_gw:
+    default: []
+- organization_name:
+    default: Basic Services
+- jupyter_asg_desired_capacity:
+    default: 0
+- jupyter_asg_max_size:
+    default: 10
+- jupyter_asg_min_size:
+    default: 0
+- workflow_asg_desired_capacity:
+    default: 0
+- workflow_asg_max_size:
+    default: 50
+- workflow_asg_min_size:
+    default: 0
+- iam-serviceaccount:
+    default: true
+- domain_test:
+    default: www.google.com
+    description: url for the lambda function to check for the proxy
+- deploy_workflow:
+    default: false
+    description: Deploy workflow nodepool?
+- secondary_availability_zones:
+    default:
+    - us-east-1a
+    - us-east-1b
+    - us-east-1c
+    - us-east-1d
+    description: AZ to be used by EKS nodes in the secondary subnet
+- deploy_jupyter:
+    default: true
+    description: Deploy workflow nodepool?
+- dual_proxy:
+    default: false
+    description: Single instance and HA
+- single_az_for_jupyter:
+    default: false
+    description: Jupyter notebooks on a single AZ
+- oidc_eks_thumbprint:
+    default:
+    - 9e99a48a9960b14926bb7f3b02e22da2b0ab7280
+    description: Thumbprint for the AWS OIDC identity provider
+- sns_topic_arn:
+    default: arn:aws:sns:us-east-1:433568766270:planx-csoc-alerts-topic
+    description: SNS topic ARN for alerts
+- fips_ami_kms:
+    default: arn:aws:kms:us-east-1:707767160287:key/mrk-697897f040ef45b0aa3cebf38a916f99
+- fips_enabled_ami:
+    default: ami-0de87e3680dcb13ec
+- availability_zones:
+    default:
+    - us-east-1a
+    - us-east-1c
+    - us-east-1d
+    description: AZ to be used by EKS nodes
+- deploy_eks:
+    default: true
+- deploy_es:
+    default: true
+- es_name:
+    default: ''
+- ebs_volume_size_gb:
+    default: 20
+- encryption:
+    default: 'true'
+- es_instance_type:
+    default: m4.large.elasticsearch
+- es_instance_count:
+    default: 3
+- es_version:
+    default: '6.8'
+    description: What version to use when deploying ES
+- es_linked_role:
+    default: true
+    description: Whether or no to deploy a linked roll for ES
+- spot_linked_role:
+    default: false
+- cluster_identifier:
+    default: aurora-cluster
+    description: Cluster Identifier
+    type: string
+- cluster_instance_identifier:
+    default: aurora-cluster-instance
+    description: Cluster Instance Identifier
+    type: string
+- cluster_instance_class:
+    default: db.serverless
+    description: Cluster Instance Class
+    type: string
+- cluster_engine:
+    default: aurora-postgresql
+    description: Aurora database engine type
+    type: string
+- cluster_engine_version:
+    default: '13.7'
+    description: Aurora database engine version.
+    type: string
+- master_username:
+    default: postgres
+    description: Master DB username
+    type: string
+- storage_encrypted:
+    default: true
+    description: Specifies whether storage encryption is enabled
+    type: bool
+- apply_immediate:
+    default: true
+    description: Instruct the service to apply the change immediately. This can result
+      in a brief downtime as the server reboots. See the AWS Docs on RDS Maintenance
+      for more information
+    type: bool
+- engine_mode:
+    default: provisioned
+    description: use provisioned for Serverless v2 RDS cluster
+    type: string
+- serverlessv2_scaling_min_capacity:
+    default: '0.5'
+    description: Serverless v2 RDS cluster minimum scaling capacity in ACUs
+    type: string
+- serverlessv2_scaling_max_capacity:
+    default: '10.0'
+    description: Serverless v2 RDS cluster maximum scaling capacity in ACUs
+    type: string
+- skip_final_snapshot:
+    default: false
+    description: Determines whether a final DB snapshot is created before the DB cluster
+      is deleted
+    type: bool
+- final_snapshot_identifier:
+    default: aurora-cluster-snapshot-final
+    description: The name of your final DB snapshot when this DB cluster is deleted
+    type: string
+- backup_retention_period:
+    default: 10
+    description: The days to retain backups for
+    type: number
+- preferred_backup_window:
+    default: 02:00-03:00
+    description: The daily time range during which automated backups are created if
+      automated backups are enabled using the BackupRetentionPeriod parameter
+    type: string
+- password_length:
+    default: 32
+    description: The length of the password string
+    type: number
+- db_kms_key_id:
+    default: ''
+- deploy_aurora:
+    default: false
+- deploy_rds:
+    default: true
+- use_asg:
+    default: true
+- use_karpenter:
+    default: false
+- deploy_karpenter_in_k8s:
+    default: false
+    description: Allows you to enable the Karpenter Helm chart and associated resources
+      without deploying the other parts of karpenter (i.e. the roles, permissions,
+      and SQS queue)
+- karpenter_version:
+    default: v0.32.9
+- deploy_cloud_trail:
+    default: true
+- send_logs_to_csoc:
+    default: true
+- route_table_name:
+    default: eks_private
+- eks_public_access:
+    default: 'true'
+- deploy_gen3:
+    default: false
+- ambassador_enabled:
+    default: true
+    description: Enable ambassador
+    type: bool
+- arborist_enabled:
+    default: true
+    description: Enable arborist
+    type: bool
+- argo_enabled:
+    default: true
+    description: Enable argo
+    type: bool
+- audit_enabled:
+    default: true
+    description: Enable audit
+    type: bool
+- aws-es-proxy_enabled:
+    default: true
+    description: Enable aws-es-proxy
+    type: bool
+- dbgap_enabled:
+    default: false
+    description: Enable dbgap sync in the usersync job
+    type: bool
+- dd_enabled:
+    default: false
+    description: Enable datadog
+    type: bool
+- dictionary_url:
+    default: ''
+    description: URL to the data dictionary
+- dispatcher_job_number:
+    default: 10
+    description: Number of dispatcher jobs
+- fence_enabled:
+    default: true
+    description: Enable fence
+    type: bool
+- guppy_enabled:
+    default: true
+    description: Enable guppy
+    type: bool
+- hatchery_enabled:
+    default: true
+    description: Enable hatchery
+    type: bool
+- indexd_enabled:
+    default: true
+    description: Enable indexd
+    type: bool
+- indexd_prefix:
+    default: dg.XXXX/
+    description: Indexd prefix
+- ingress_enabled:
+    default: true
+    description: Create ALB ingress
+    type: bool
+- manifestservice_enabled:
+    default: true
+    description: Enable manfiestservice
+    type: bool
+- metadata_enabled:
+    default: true
+    description: Enable metadata
+    type: bool
+- netpolicy_enabled:
+    default: false
+    description: Enable network policy security rules
+    type: bool
+- peregrine_enabled:
+    default: true
+    description: Enable perergrine
+    type: bool
+- pidgin_enabled:
+    default: true
+    description: Enable pidgin
+    type: bool
+- portal_enabled:
+    default: true
+    description: Enable portal
+    type: bool
+- public_datasets:
+    default: false
+    description: whether the datasets are public
+    type: bool
+- requestor_enabled:
+    default: true
+    description: Enable requestor
+    type: bool
+- revproxy_arn:
+    default: ''
+    description: ARN for the revproxy cert in ACM
+- revproxy_enabled:
+    default: true
+    description: Enable revproxy
+    type: bool
+- sheepdog_enabled:
+    default: true
+    description: Enable sheepdog
+    type: bool
+- slack_send_dbgap:
+    default: false
+    description: Enable slack message for usersync job
+    type: bool
+- ssjdispatcher_enabled:
+    default: true
+    description: Enable ssjdispatcher
+    type: bool
+- tier_access_level:
+    default: private
+    description: Tier access level for guppy
+- tier_access_limit:
+    default: '100'
+    description: value for tier access limit
+- usersync_enabled:
+    default: true
+    description: Enable usersync cronjob
+    type: bool
+- usersync_schedule:
+    default: '*/30 * * * *'
+    description: Cronjob schedule for usersync
+- useryaml_s3_path:
+    default: https://s3.amazonaws.com/dictionary-artifacts/datadictionary/develop/schema.json
+    description: S3 path to the user.yaml file
+- wts_enabled:
+    default: true
+    description: Enable wts
+    type: bool
+- fence_config_path:
+    default: ''
+- useryaml_path:
+    default: ''
+- gitops_path:
+    default: https://github.com/uc-cdis/cdis-manifest.git
+- google_client_id:
+    default: ''
+    sensitive: true
+- google_client_secret:
+    default: ''
+    sensitive: true
+- fence_access_key:
+    default: ''
+    sensitive: true
+- fence_secret_key:
+    default: ''
+    sensitive: true
+- upload_bucket:
+    default: ''
+- namespace:
+    default: default
+- secrets_manager_enabled:
+    default: false
+- ci_run:
+    default: false
+- commons_log_retention:
+    default: '3653'
+    description: value in days for the cloudwatch log retention period
+- enable_vpc_endpoints:
+    default: true
+- deploy_es_role:
+    default: false
+- deploy_waf:
+    default: false
+- k8s_bootstrap_resources:
+    default: true
+    description: If set to true, creates resources for bootstrapping a kubernetes
+      cluster (such as karpenter configs and helm releases)
+- base_rules:
+    default:
+    - managed_rule_group_name: AWSManagedRulesAmazonIpReputationList
+      override_to_count:
+      - AWSManagedReconnaissanceList
+      priority: 0
+    - managed_rule_group_name: AWSManagedRulesPHPRuleSet
+      override_to_count:
+      - PHPHighRiskMethodsVariables_HEADER
+      - PHPHighRiskMethodsVariables_QUERYSTRING
+      - PHPHighRiskMethodsVariables_BODY
+      priority: 1
+    - managed_rule_group_name: AWSManagedRulesWordPressRuleSet
+      override_to_count:
+      - WordPressExploitableCommands_QUERYSTRING
+      - WordPressExploitablePaths_URIPATH
+      priority: 2
+    description: Base AWS Managed Rules
+    type: '${list(object({"managed_rule_group_name": "string", "priority": "number",
+      "override_to_count": "${list(string)}"}))}'
+- additional_rules:
+    default: []
+    description: Additional AWS Managed Rules
+    type: '${list(object({"managed_rule_group_name": "string", "priority": "number",
+      "override_to_count": "${list(string)}"}))}'
+---
+module:
+- aws_waf:
+    additional_rules: ${var.additional_rules}
+    base_rules: ${var.base_rules}
+    count: '${var.deploy_waf ? 1 : 0}'
+    depends_on:
+    - ${module.cdis_vpc.vpc_id}
+    - ${module.cdis_vpc.vpc_peering_id}
+    source: ../modules/waf
+    vpc_name: ${var.vpc_name}

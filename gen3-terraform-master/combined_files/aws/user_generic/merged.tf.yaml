@@ -1,0 +1,26 @@
+resource:
+- aws_iam_access_key:
+    generic_user_access_key:
+      user: ${aws_iam_user.generic_user.name}
+- aws_iam_user:
+    generic_user:
+      name: ${var.username}
+terraform:
+- backend:
+  - s3:
+      encrypt: 'true'
+  required_providers:
+  - aws:
+      source: hashicorp/aws
+      version: ~> 5.0
+---
+output:
+- key_id:
+    value: ${aws_iam_access_key.generic_user_access_key.id}
+- key_secret:
+    sensitive: true
+    value: ${aws_iam_access_key.generic_user_access_key.secret}
+---
+variable:
+- username:
+    description: name of iam user

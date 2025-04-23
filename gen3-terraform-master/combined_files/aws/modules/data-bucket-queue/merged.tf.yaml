@@ -1,0 +1,81 @@
+resource:
+- aws_sns_topic:
+    user_updates:
+      name: ${var.bucket_name}_sns_topic
+- aws_sqs_queue:
+    user_updates_queue:
+      name: ${var.bucket_name}_data_upload
+      visibility_timeout_seconds: 300
+- aws_sns_topic_subscription:
+    user_updates_sqs_target:
+      endpoint: ${aws_sqs_queue.user_updates_queue.arn}
+      protocol: sqs
+      topic_arn: ${aws_sns_topic.user_updates.arn}
+- aws_s3_bucket_notification:
+    bucket_notification:
+      bucket: ${var.bucket_name}
+      count: '${var.configure_bucket_notifications ? 1 : 0}'
+      lifecycle:
+      - ignore_changes:
+        - ${topic}
+      topic:
+      - events:
+        - s3:ObjectCreated:Put
+        - s3:ObjectCreated:Post
+        - s3:ObjectCreated:Copy
+        - s3:ObjectCreated:CompleteMultipartUpload
+        topic_arn: ${aws_sns_topic.user_updates.arn}
+- aws_sqs_queue_policy:
+    subscribe_sns:
+      policy: "{\n  \"Version\": \"2012-10-17\",\n  \"Id\": \"sqspolicy\",\n  \"Statement\"\
+        : [\n    {\n      \"Sid\": \"100\",\n      \"Effect\": \"Allow\",\n      \"\
+        Principal\": \"*\",\n      \"Action\": \"sqs:SendMessage\",\n      \"Resource\"\
+        : \"${aws_sqs_queue.user_updates_queue.arn}\",\n      \"Condition\": {\n \
+        \       \"ArnEquals\": {\n          \"aws:SourceArn\": \"${aws_sns_topic.user_updates.arn}\"\
+        \n        }\n      }\n    }\n  ]\n}"
+      queue_url: ${aws_sqs_queue.user_updates_queue.id}
+- aws_sns_topic_policy:
+    default:
+      arn: ${aws_sns_topic.user_updates.arn}
+      policy: ${data.aws_iam_policy_document.sns-topic-policy.json}
+---
+data:
+- aws_s3_bucket:
+    selected:
+      bucket: ${var.bucket_name}
+- aws_iam_policy_document:
+    sns-topic-policy:
+      policy_id: __default_policy_ID
+      statement:
+      - actions:
+        - SNS:Subscribe
+        - SNS:Receive
+        - SNS:Publish
+        - SNS:ListSubscriptionsByTopic
+        - SNS:GetTopicAttributes
+        condition:
+        - test: ArnLike
+          values:
+          - arn:aws:s3:*:*:${var.bucket_name}
+          variable: aws:SourceArn
+        effect: Allow
+        principals:
+        - identifiers:
+          - '*'
+          type: AWS
+        resources:
+        - ${aws_sns_topic.user_updates.arn}
+        sid: __default_statement_ID
+---
+output:
+- data-bucket_name:
+    value: ${aws_sns_topic.user_updates.arn}
+- sns-topic-arn:
+    value: ${aws_sns_topic.user_updates.arn}
+- sqs-url:
+    value: ${aws_sqs_queue.user_updates_queue.id}
+---
+variable:
+- bucket_name: {}
+- configure_bucket_notifications:
+    default: true

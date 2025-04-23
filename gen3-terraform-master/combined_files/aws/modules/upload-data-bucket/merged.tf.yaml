@@ -1,0 +1,184 @@
+data:
+- aws_iam_policy_document:
+    data_bucket_reader:
+      statement:
+      - actions:
+        - s3:Get*
+        - s3:List*
+        effect: Allow
+        resources:
+        - ${aws_s3_bucket.data_bucket.arn}
+        - ${aws_s3_bucket.data_bucket.arn}/*
+- aws_iam_policy_document:
+    data_bucket_writer:
+      statement:
+      - actions:
+        - s3:PutObject
+        effect: Allow
+        resources:
+        - ${aws_s3_bucket.data_bucket.arn}
+        - ${aws_s3_bucket.data_bucket.arn}/*
+- aws_iam_policy_document:
+    log_bucket_writer:
+      statement:
+      - actions:
+        - s3:Get*
+        - s3:List*
+        effect: Allow
+        resources:
+        - ${aws_s3_bucket.log_bucket.arn}
+        - ${aws_s3_bucket.log_bucket.arn}/*
+      - actions:
+        - s3:PutObject
+        - s3:GetObject
+        - s3:DeleteObject
+        effect: Allow
+        resources:
+        - ${aws_s3_bucket.log_bucket.arn}/*
+---
+resource:
+- aws_iam_role:
+    data_bucket:
+      assume_role_policy: "{\n    \"Version\": \"2012-10-17\",\n    \"Statement\"\
+        : [\n        {\n            \"Action\": \"sts:AssumeRole\",\n            \"\
+        Principal\": {\n               \"Service\": \"ec2.amazonaws.com\"\n      \
+        \      },\n            \"Effect\": \"Allow\",\n            \"Sid\": \"\"\n\
+        \        }\n    ]\n}"
+      name: ${var.vpc_name}-data-bucket-access
+      path: /
+- aws_iam_policy:
+    data_bucket_reader:
+      description: Data Bucket access for ${var.vpc_name}
+      name: data_bucket_read_${var.vpc_name}
+      policy: ${data.aws_iam_policy_document.data_bucket_reader.json}
+- aws_iam_policy:
+    data_bucket_writer:
+      description: Data Bucket access for ${var.vpc_name}
+      name: data_bucket_write_${var.vpc_name}
+      policy: ${data.aws_iam_policy_document.data_bucket_reader.json}
+- aws_iam_role_policy_attachment:
+    data_bucket_reader:
+      policy_arn: ${aws_iam_policy.data_bucket_reader.arn}
+      role: ${aws_iam_role.data_bucket.name}
+- aws_iam_role_policy_attachment:
+    data_bucket_writer:
+      policy_arn: ${aws_iam_policy.data_bucket_writer.arn}
+      role: ${aws_iam_role.data_bucket.name}
+- aws_iam_policy:
+    log_bucket_writer:
+      description: Read or write ${aws_s3_bucket.log_bucket.id}
+      name: bucket_writer_${aws_s3_bucket.log_bucket.id}
+      policy: ${data.aws_iam_policy_document.log_bucket_writer.json}
+---
+module:
+- data-bucket-queue:
+    bucket_name: ${aws_s3_bucket.data_bucket.id}
+    configure_bucket_notifications: false
+    source: ../data-bucket-queue
+- cloud-trail:
+    bucket_arn: ${aws_s3_bucket.data_bucket.arn}
+    bucket_id: ${aws_s3_bucket.log_bucket.id}
+    cloudwatchlogs_group: ${var.cloudwatchlogs_group}
+    count: '${var.deploy_cloud_trail ? 1 : 0}'
+    environment: ${var.environment}
+    source: ../cloud-trail
+    vpc_name: ${var.vpc_name}
+---
+output:
+- data-bucket_name:
+    value: ${aws_s3_bucket.data_bucket.id}
+- log_bucket_name:
+    value: ${aws_s3_bucket.log_bucket.id}
+---
+resource:
+- aws_s3_bucket:
+    data_bucket:
+      bucket: ${var.vpc_name}-data-bucket
+      tags:
+        Environment: ${var.environment}
+        Name: ${var.vpc_name}-data-bucket
+        Purpose: data bucket
+- aws_s3_bucket_server_side_encryption_configuration:
+    data_bucket:
+      bucket: ${aws_s3_bucket.data_bucket.bucket}
+      lifecycle:
+      - ignore_changes: ${all}
+      rule:
+      - apply_server_side_encryption_by_default:
+        - sse_algorithm: aws:kms
+- aws_s3_bucket_logging:
+    data_bucket:
+      bucket: ${aws_s3_bucket.data_bucket.id}
+      target_bucket: ${aws_s3_bucket.log_bucket.id}
+      target_prefix: log/${var.vpc_name}-data-bucket/
+- aws_s3_bucket_public_access_block:
+    data_bucket_privacy:
+      block_public_acls: true
+      block_public_policy: true
+      bucket: ${aws_s3_bucket.data_bucket.id}
+      ignore_public_acls: true
+      restrict_public_buckets: true
+- aws_s3_bucket_notification:
+    bucket_notification:
+      bucket: ${aws_s3_bucket.data_bucket.id}
+      topic:
+      - events:
+        - s3:ObjectCreated:Put
+        - s3:ObjectCreated:Post
+        - s3:ObjectCreated:Copy
+        - s3:ObjectCreated:CompleteMultipartUpload
+        topic_arn: ${module.data-bucket-queue.data-bucket_name}
+- aws_s3_bucket:
+    log_bucket:
+      bucket: ${var.vpc_name}-data-bucket-logs
+      tags:
+        Environment: ${var.environment}
+        Name: ${var.vpc_name}
+        Purpose: logs bucket
+- aws_s3_bucket_server_side_encryption_configuration:
+    log_bucket:
+      bucket: ${aws_s3_bucket.log_bucket.bucket}
+      rule:
+      - apply_server_side_encryption_by_default:
+        - sse_algorithm: aws:kms
+- aws_s3_bucket_lifecycle_configuration:
+    log_bucket:
+      bucket: ${aws_s3_bucket.log_bucket.bucket}
+      rule:
+      - expiration:
+        - days: 120
+        filter:
+        - and:
+          - prefix: /
+            tags:
+              autoclean: 'true'
+              rule: log
+        id: log
+        status: Enabled
+- aws_s3_bucket_public_access_block:
+    data_bucket_logs_privacy:
+      block_public_acls: true
+      block_public_policy: true
+      bucket: ${aws_s3_bucket.log_bucket.id}
+      ignore_public_acls: true
+      restrict_public_buckets: true
+- aws_s3_bucket_policy:
+    log_bucket_writer_by_ct:
+      bucket: ${aws_s3_bucket.log_bucket.id}
+      policy: "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n    \
+        \  \"Sid\": \"AWSCloudTrailAclCheck20150319\",\n      \"Effect\": \"Allow\"\
+        ,\n      \"Principal\": {\n         \"Service\": \"cloudtrail.amazonaws.com\"\
+        \n      },\n      \"Action\": \"s3:GetBucketAcl\",\n      \"Resource\": \"\
+        ${aws_s3_bucket.log_bucket.arn}\"\n    },\n\n    {\n      \"Sid\": \"AWSCloudTrailWrite20150319\"\
+        ,\n     \"Effect\": \"Allow\",\n      \"Principal\": {\n        \"Service\"\
+        : \"cloudtrail.amazonaws.com\"\n      },\n      \"Action\": \"s3:PutObject\"\
+        ,\n      \"Resource\": \"${aws_s3_bucket.log_bucket.arn}/*\",\n      \"Condition\"\
+        : {\n         \"StringEquals\": {\n         \"s3:x-amz-acl\": \"bucket-owner-full-control\"\
+        \n         }\n      }\n    }\n  ]\n}"
+---
+variable:
+- vpc_name: {}
+- environment: {}
+- cloudwatchlogs_group: {}
+- deploy_cloud_trail:
+    default: true

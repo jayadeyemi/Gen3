@@ -1,0 +1,29 @@
+output:
+- kms_arn:
+    value: ${module.kms_key.kms_arn}
+---
+module:
+- kms_key:
+    account_ids: ${var.account_ids}
+    action: ${var.action}
+    source: ../modules/kms-key
+terraform:
+- backend:
+  - s3:
+      encrypt: 'true'
+  required_providers:
+  - aws:
+      source: hashicorp/aws
+      version: ~> 5.0
+---
+variable:
+- account_ids:
+    default:
+    - ''
+    description: List of account ids to grant access to the bucket
+    type: ${list(string)}
+- action:
+    default:
+    - kms:Decrypt
+    description: List of actions to grant access to the bucket
+    type: ${list(string)}

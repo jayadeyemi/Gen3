@@ -1,0 +1,32 @@
+resource:
+- aws_ebs_volume:
+    worker_extra_drive:
+      availability_zone: ${data.aws_instance.worker.availability_zone}
+      encrypted: true
+      size: ${var.volume_size}
+      tags:
+        Name: ${lookup(data.aws_instance.worker.tags,"Name")}_extravolume_${length(data.aws_instance.worker.ebs_block_device)
+          + 1}
+- aws_volume_attachment:
+    ebs_att:
+      device_name: ${var.dev_name}
+      instance_id: ${data.aws_instance.worker.id}
+      volume_id: ${aws_ebs_volume.worker_extra_drive.id}
+---
+data:
+- aws_instance:
+    worker:
+      filter:
+      - name: network-interface.addresses.private-ip-address
+        values:
+        - ${var.instance_ip}
+---
+output:
+- vm_name:
+    value: ${lookup(data.aws_instance.worker.tags, "Name")}
+---
+variable:
+- instance_ip: {}
+- volume_size: {}
+- dev_name:
+    default: /dev/sdz

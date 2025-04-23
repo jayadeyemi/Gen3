@@ -1,0 +1,32 @@
+resource:
+- aws_iam_policy:
+    policy:
+      description: ${var.policy_description}
+      name: ${var.policy_name}
+      path: ${var.policy_path}
+      policy: ${var.policy_json}
+---
+output:
+- id:
+    value: ${aws_iam_policy.policy.id}
+- name:
+    value: ${aws_iam_policy.policy.name}
+- arn:
+    value: ${aws_iam_policy.policy.arn}
+- descripton:
+    value: ${aws_iam_policy.policy.description}
+- path:
+    value: ${aws_iam_policy.policy.path}
+- policy:
+    value: ${aws_iam_policy.policy.policy}
+---
+variable:
+- policy_name:
+    description: Name for the policy
+- policy_path:
+    description: 'Path in which to create the policy. '
+- policy_description:
+    default: ''
+    description: Description for the policy
+- policy_json:
+    description: Basically the actual policy in JSON

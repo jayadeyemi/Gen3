@@ -1,0 +1,201 @@
+data:
+- aws_caller_identity:
+    current: {}
+- aws_eks_cluster:
+    eks:
+      name: ${var.vpc_name}
+- aws_secretsmanager_secret:
+    aurora-master-password:
+      name: ${var.vpc_name}_aurora-master-password
+- aws_secretsmanager_secret_version:
+    aurora-master-password:
+      secret_id: ${data.aws_secretsmanager_secret.aurora-master-password.id}
+- aws_iam_policy_document:
+    policy:
+      statement:
+      - actions:
+        - secretsmanager:GetSecretValue
+        - secretsmanager:DescribeSecret
+        resources:
+        - ${module.secrets_manager[0].secret-arn}
+- aws_iam_policy_document:
+    sa_policy:
+      statement:
+      - actions:
+        - sts:AssumeRoleWithWebIdentity
+        condition:
+        - test: StringEquals
+          values:
+          - system:serviceaccount:${local.sa_namespace}:${local.sa_name}
+          variable: ${local.eks_oidc_issuer}:sub
+        principals:
+        - identifiers:
+          - arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${local.eks_oidc_issuer}
+          type: Federated
+- aws_db_instance:
+    database:
+      db_instance_identifier: ${var.vpc_name}-aurora-cluster-instance
+---
+locals:
+- database_name: '${var.database_name != "" ? var.database_name : "${var.service}_${var.namespace}"}'
+  database_password: '${var.password != "" ? var.password : random_password.db_password[0].result}'
+  database_username: '${var.username != "" ? var.username : "${var.service}_${var.namespace}"}'
+  eks_oidc_issuer: ${trimprefix(data.aws_eks_cluster.eks.identity[0].oidc[0].issuer,
+    "https://")}
+  sa_name: ${var.service}-sa
+  sa_namespace: ${var.namespace}
+module:
+- secrets_manager:
+    count: '${var.secrets_manager_enabled ? 1 : 0}'
+    depends_on:
+    - ${null_resource.user_setup}
+    secret: '${templatefile("${path.module}/secrets_manager.tftpl", {"hostname": "${data.aws_db_instance.database.address}",
+      "database": "${local.database_name}", "username": "${local.database_username}",
+      "password": "${local.database_password}"})}'
+    secret_name: ${var.namespace}-${var.service}-creds
+    source: ../modules/secrets_manager
+    vpc_name: ${var.vpc_name}
+resource:
+- aws_iam_policy:
+    secrets_manager_policy:
+      count: '${var.secrets_manager_enabled ? 1 : 0}'
+      description: Policy for ${var.vpc_name}-${var.service} to access secrets manager
+      name: ${var.vpc_name}-${var.service}-${var.namespace}-creds-access-policy
+      policy: ${data.aws_iam_policy_document.policy.json}
+- aws_iam_role:
+    role:
+      assume_role_policy: ${data.aws_iam_policy_document.sa_policy.json}
+      count: '${var.secrets_manager_enabled ? var.role != "" ? 0 : 1 : 0}'
+      name: ${var.vpc_name}-${var.service}-${var.namespace}-creds-access-role
+- aws_iam_role_policy_attachment:
+    new_attach:
+      count: '${var.secrets_manager_enabled ? 1 : 0}'
+      policy_arn: ${aws_iam_policy.secrets_manager_policy[0].arn}
+      role: '${var.role != "" ? var.role : aws_iam_role.role[0].name}'
+- random_password:
+    db_password:
+      count: '${var.password != "" ? 0 : 1}'
+      length: 16
+      special: false
+- null_resource:
+    db_setup:
+      provisioner:
+      - local-exec:
+          command: psql -h ${data.aws_db_instance.database.address} -U ${var.admin_database_username}
+            -d ${var.admin_database_name} -c "CREATE DATABASE \"${local.database_name}\";"
+          environment:
+            PGPASSWORD: '${var.admin_database_password != "" ? var.admin_database_password
+              : data.aws_secretsmanager_secret_version.aurora-master-password.secret_string}'
+          on_failure: ${continue}
+      triggers:
+        database: ${local.database_name}
+- null_resource:
+    user_setup:
+      depends_on:
+      - ${null_resource.db_setup}
+      provisioner:
+      - local-exec:
+          command: "psql -h ${data.aws_db_instance.database.address} -U ${var.admin_database_username}\
+            \ -d ${var.admin_database_name} -c \"${templatefile(\"${path.module}/db_setup.tftpl\"\
+            , {\n          username  = local.database_username\n          database\
+            \  = local.database_name\n          password  = local.database_password\n\
+            \        })}\""
+          environment:
+            PGPASSWORD: '${var.admin_database_password != "" ? var.admin_database_password
+              : data.aws_secretsmanager_secret_version.aurora-master-password.secret_string}'
+      triggers:
+        database: ${local.database_name}
+        password: ${local.database_password}
+        username: ${local.database_username}
+- null_resource:
+    db_restore:
+      count: '${var.db_restore && var.dump_file_to_restore != "" ? 1 : 0}'
+      depends_on:
+      - ${null_resource.user_setup}
+      provisioner:
+      - local-exec:
+          command: "# If we have a role to assume, then assume it and set the credentials\n\
+            if [[ ${var.db_job_role_arn} != \"\" ]]; then\n  CREDENTIALS=(`aws sts\
+            \ assume-role --role-arn ${var.db_job_role_arn} --role-session-name \"\
+            db-migration-cli\" --query \"[Credentials.AccessKeyId,Credentials.SecretAccessKey,Credentials.SessionToken]\"\
+            \ --output text`)\n  unset AWS_PROFILE\n  export AWS_DEFAULT_REGION=us-east-1\n\
+            \  export AWS_ACCESS_KEY_ID=\"$${CREDENTIALS[0]}\"\n  export AWS_SECRET_ACCESS_KEY=\"\
+            $${CREDENTIALS[1]}\"\n  export AWS_SESSION_TOKEN=\"$${CREDENTIALS[2]}\"\
+            \nfi\n\naws s3 cp \"${var.dump_file_to_restore}\" - --quiet | psql -h\
+            \ \"${data.aws_db_instance.database.address}\" -U \"${local.database_username}\"\
+            \ -d \"${local.database_name}\"\necho \"Done restoring database\""
+          environment:
+            PGPASSWORD: ${local.database_password}
+          interpreter:
+          - /bin/bash
+          - -c
+      triggers:
+        database: ${local.database_name}
+        password: ${local.database_password}
+        username: ${local.database_username}
+- null_resource:
+    db_dump:
+      count: '${var.db_dump && var.dump_file_storage_location != "" ? 1 : 0}'
+      depends_on:
+      - ${null_resource.user_setup}
+      provisioner:
+      - local-exec:
+          command: "# If we have a role to assume, then assume it and set the credentials\n\
+            if [[ ${var.db_job_role_arn} != \"\" ]]; then\n  CREDENTIALS=(`aws sts\
+            \ assume-role --role-arn ${var.db_job_role_arn} --role-session-name \"\
+            db-migration-cli\" --query \"[Credentials.AccessKeyId,Credentials.SecretAccessKey,Credentials.SessionToken]\"\
+            \ --output text`)\n  unset AWS_PROFILE\n  export AWS_DEFAULT_REGION=us-east-1\n\
+            \  export AWS_ACCESS_KEY_ID=\"$${CREDENTIALS[0]}\"\n  export AWS_SECRET_ACCESS_KEY=\"\
+            $${CREDENTIALS[1]}\"\n  export AWS_SESSION_TOKEN=\"$${CREDENTIALS[2]}\"\
+            \nfi\n    \npg_dump --username=\"${local.database_username}\" --dbname=\"\
+            ${local.database_name}\" --host=\"${data.aws_db_instance.database.address}\"\
+            \ --no-password --no-owner --no-privileges >> ./dump.sql && aws s3 cp\
+            \ ./dump.sql ${var.dump_file_storage_location} && rm ./dump.sql\necho\
+            \ \"Done restoring database\""
+          environment:
+            PGPASSWORD: ${local.database_password}
+          interpreter:
+          - /bin/bash
+          - -c
+      triggers:
+        database: ${local.database_name}
+        password: ${local.database_password}
+        username: ${local.database_username}
+terraform:
+- backend:
+  - s3:
+      encrypt: 'true'
+---
+variable:
+- vpc_name:
+    default: ''
+- service:
+    default: ''
+- admin_database_username:
+    default: postgres
+- admin_database_name:
+    default: postgres
+- admin_database_password:
+    default: ''
+- namespace:
+    default: default
+- role:
+    default: ''
+- database_name:
+    default: ''
+- username:
+    default: ''
+- password:
+    default: ''
+- secrets_manager_enabled:
+    default: true
+- dump_file_to_restore:
+    default: ''
+- dump_file_storage_location:
+    default: ''
+- db_restore:
+    default: false
+- db_dump:
+    default: false
+- db_job_role_arn:
+    default: ''

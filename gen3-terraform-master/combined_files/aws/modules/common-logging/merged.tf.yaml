@@ -1,0 +1,290 @@
+data:
+- aws_iam_policy_document:
+    firehose_policy_document:
+      statement:
+      - actions:
+        - s3:ListBucketMultipartUploads
+        - s3:ListBucket
+        - s3:PutObject
+        - s3:GetObject
+        - s3:AbortMultipartUpload
+        - s3:GetBucketLocation
+        effect: Allow
+        resources:
+        - ${aws_s3_bucket.common_logging_bucket.arn}
+        - ${aws_s3_bucket.common_logging_bucket.arn}/*
+      - actions:
+        - logs:*
+        effect: Allow
+        resources:
+        - '*'
+      - actions:
+        - es:*
+        effect: Allow
+        resources:
+        - '*'
+- aws_iam_policy_document:
+    lambda_policy_document:
+      statement:
+      - actions:
+        - logs:*
+        effect: Allow
+        resources:
+        - '*'
+      - actions:
+        - kinesis:Get*
+        - kinesis:List*
+        - kinesis:Describe*
+        effect: Allow
+        resources:
+        - ${aws_kinesis_stream.common_stream.arn}
+      - actions:
+        - firehose:PutRecordBatch
+        - firehose:PutRecord
+        effect: Allow
+        resources:
+        - ${aws_kinesis_firehose_delivery_stream.firehose_to_es.arn}
+        - ${aws_kinesis_firehose_delivery_stream.firehose_to_s3.arn}
+      - actions:
+        - lambda:InvokeFunction
+        effect: Allow
+        resources:
+        - ${var.log_dna_function}
+---
+data:
+- aws_iam_policy_document:
+    cwltok_policy_document:
+      statement:
+      - actions:
+        - kinesis:PutRecord
+        effect: Allow
+        resources:
+        - ${aws_kinesis_stream.common_stream.arn}
+      - actions:
+        - iam:PassRole
+        effect: Allow
+        resources:
+        - ${aws_iam_role.cwl_to_kinesis_role.arn}
+- aws_iam_policy_document:
+    common_logs_destination_policy:
+      statement:
+      - actions:
+        - logs:PutSubscriptionFilter
+        effect: Allow
+        principals:
+        - identifiers:
+          - ${var.child_account_id}
+          type: AWS
+        resources:
+        - ${aws_cloudwatch_log_destination.common_logs_destination.arn}
+- archive_file:
+    lambda_function:
+      output_path: lambda_function_payload.zip
+      source_file: ${path.module}/lambda_function.py
+      type: zip
+resource:
+- aws_s3_bucket:
+    common_logging_bucket:
+      bucket: ${var.common_name}-logging
+      tags:
+        Environment: ${var.common_name}
+        Organization: Basic Services
+- aws_s3_bucket_server_side_encryption_configuration:
+    common_logging_bucket:
+      bucket: ${aws_s3_bucket.common_logging_bucket.id}
+      rule:
+      - apply_server_side_encryption_by_default:
+        - sse_algorithm: AES256
+- aws_s3_bucket_lifecycle_configuration:
+    common_logging_bucket:
+      bucket: ${aws_s3_bucket.common_logging_bucket.id}
+      rule:
+      - expiration:
+        - days: 2190
+        filter:
+        - and:
+          - prefix: forwarded*/
+            tags:
+              autoclean: 'true'
+              rule: log
+        id: forwarded
+        status: Enabled
+        transition:
+        - days: 60
+          storage_class: STANDARD_IA
+        - days: 90
+          storage_class: GLACIER
+- aws_s3_bucket_public_access_block:
+    data_bucket_privacy:
+      block_public_acls: true
+      block_public_policy: true
+      bucket: ${aws_s3_bucket.common_logging_bucket.id}
+      ignore_public_acls: true
+      restrict_public_buckets: true
+- aws_kinesis_stream:
+    common_stream:
+      name: ${var.common_name}_stream
+      shard_count: 1
+      tags:
+        Environment: ${var.common_name}
+        Organization: Basic Services
+- aws_iam_role:
+    cwl_to_kinesis_role:
+      assume_role_policy: "{\n  \"Version\": \"2008-10-17\",\n  \"Statement\": {\n\
+        \    \"Effect\": \"Allow\",\n    \"Principal\": {\n      \"Service\": \"logs.${var.aws_region}.amazonaws.com\"\
+        \n    },\n    \"Action\": \"sts:AssumeRole\"\n  }\n}"
+      name: ${var.common_name}_cwl_to_kinesis_role
+      path: /
+- aws_iam_role_policy:
+    cwltok_policy:
+      name: ${var.common_name}_cwltok_policy
+      policy: ${data.aws_iam_policy_document.cwltok_policy_document.json}
+      role: ${aws_iam_role.cwl_to_kinesis_role.id}
+- aws_cloudwatch_log_destination:
+    common_logs_destination:
+      name: ${var.common_name}_logs_destination
+      role_arn: ${aws_iam_role.cwl_to_kinesis_role.arn}
+      target_arn: ${aws_kinesis_stream.common_stream.arn}
+- aws_cloudwatch_log_destination_policy:
+    common_logs_destination_policy:
+      access_policy: ${data.aws_iam_policy_document.common_logs_destination_policy.json}
+      destination_name: ${aws_cloudwatch_log_destination.common_logs_destination.name}
+- aws_iam_role:
+    firehose_role:
+      assume_role_policy: "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n\
+        \    {\n      \"Sid\": \"\",\n      \"Effect\": \"Allow\",\n      \"Principal\"\
+        : {\n        \"Service\": \"firehose.amazonaws.com\"\n      },\n      \"Action\"\
+        : \"sts:AssumeRole\",\n      \"Condition\": {\n        \"StringEquals\": {\n\
+        \          \"sts:ExternalId\": \"${var.csoc_account_id}\"\n        }\n   \
+        \   }\n    }\n  ]\n}"
+      name: ${var.common_name}_firehose_role
+      path: /
+- aws_iam_role_policy:
+    firehose_policy:
+      name: ${var.common_name}_firehose_policy
+      policy: ${data.aws_iam_policy_document.firehose_policy_document.json}
+      role: ${aws_iam_role.firehose_role.id}
+- aws_cloudwatch_log_group:
+    csoc_common_log_group:
+      name: ${var.common_name}
+      retention_in_days: 3653
+      tags:
+        Environment: ${var.common_name}
+        Organization: Basic Services
+- aws_cloudwatch_log_stream:
+    firehose_to_ES:
+      log_group_name: ${aws_cloudwatch_log_group.csoc_common_log_group.name}
+      name: firehose_to_ES
+- aws_cloudwatch_log_stream:
+    firehose_to_S3:
+      log_group_name: ${aws_cloudwatch_log_group.csoc_common_log_group.name}
+      name: firehose_to_S3
+- aws_kinesis_firehose_delivery_stream:
+    firehose_to_es:
+      destination: elasticsearch
+      elasticsearch_configuration:
+      - cloudwatch_logging_options:
+        - enabled: true
+          log_group_name: ${var.common_name}
+          log_stream_name: firehose_to_ES
+        domain_arn: arn:aws:es:${var.aws_region}:${var.csoc_account_id}:domain/${var.elasticsearch_domain}
+        index_name: ${var.common_name}
+        index_rotation_period: OneWeek
+        role_arn: ${aws_iam_role.firehose_role.arn}
+        type_name: ${var.common_name}
+      name: ${var.common_name}_firehose_to_es
+      s3_configuration:
+      - bucket_arn: ${aws_s3_bucket.common_logging_bucket.arn}
+        buffer_interval: 400
+        buffer_size: 10
+        role_arn: ${aws_iam_role.firehose_role.arn}
+- aws_kinesis_firehose_delivery_stream:
+    firehose_to_s3:
+      destination: s3
+      name: ${var.common_name}_firehose_to_s3
+      s3_configuration:
+      - bucket_arn: ${aws_s3_bucket.common_logging_bucket.arn}
+        cloudwatch_logging_options:
+        - enabled: true
+          log_group_name: ${var.common_name}
+          log_stream_name: firehose_to_S3
+        prefix: forwarded_
+        role_arn: ${aws_iam_role.firehose_role.arn}
+- aws_iam_role:
+    lambda_role:
+      assume_role_policy: "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n\
+        \    {\n      \"Action\": \"sts:AssumeRole\",\n      \"Principal\": {\n  \
+        \      \"Service\": \"lambda.amazonaws.com\"\n      },\n      \"Effect\":\
+        \ \"Allow\",\n      \"Sid\": \"\"\n    }\n  ]\n}"
+      name: ${var.common_name}_lambda
+- aws_iam_role_policy:
+    lambda_policy:
+      name: ${var.common_name}_lambda_policy
+      policy: ${data.aws_iam_policy_document.lambda_policy_document.json}
+      role: ${aws_iam_role.lambda_role.id}
+- aws_lambda_event_source_mapping:
+    event_source_mapping:
+      batch_size: 100
+      enabled: true
+      event_source_arn: ${aws_kinesis_stream.common_stream.arn}
+      function_name: ${aws_lambda_function.logs_decoding.arn}
+      starting_position: TRIM_HORIZON
+- aws_lambda_function:
+    logs_decoding:
+      description: Decode incoming log stream
+      environment:
+      - variables:
+          es: ${var.es}
+          s3: ${var.s3}
+          slack_webhook: ${var.slack_webhook}
+          stream_name: ${var.common_name}_firehose
+          threshold: ${var.threshold}
+      filename: ${data.archive_file.lambda_function.output_path}
+      function_name: ${var.common_name}_lambda_function
+      handler: lambda_function.handler
+      memory_size: ${var.memory_size}
+      role: ${aws_iam_role.lambda_role.arn}
+      runtime: python3.6
+      source_code_hash: ${data.archive_file.lambda_function.output_base64sha256}
+      timeout: ${var.timeout}
+      tracing_config:
+      - mode: PassThrough
+---
+output:
+- cloudwatch_log_group:
+    value: ${aws_cloudwatch_log_group.csoc_common_log_group.name}
+- s3_bucket:
+    value: ${aws_s3_bucket.common_logging_bucket.bucket}
+- log_destination:
+    value: ${aws_cloudwatch_log_destination.common_logs_destination.name}
+---
+variable:
+- csoc_account_id:
+    default: '433568766270'
+- child_account_id: {}
+- common_name: {}
+- child_account_region:
+    default: us-east-1
+- aws_region:
+    default: us-east-1
+- elasticsearch_domain:
+    default: commons-logs
+- aws_access_key:
+    default: ''
+- aws_secret_key:
+    default: ''
+- threshold: {}
+- slack_webhook:
+    default: ''
+- timeout:
+    default: 300
+    description: Timeout threshold for the function
+- memory_size:
+    default: 128
+    description: Memory allocation for the function
+- es:
+    default: true
+    description: Persist logs to elasticsearch
+- s3:
+    default: true
+    description: Persist logs to s3

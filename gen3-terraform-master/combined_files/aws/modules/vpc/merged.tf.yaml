@@ -1,0 +1,400 @@
+module:
+- squid-auto:
+    activation_id: ${var.activation_id}
+    ami_account_id: ${var.ami_account_id}
+    bootstrap_script: ${var.squid_bootstrap_script}
+    branch: ${var.branch}
+    cluster_desired_capasity: ${var.squid_cluster_desired_capasity}
+    cluster_max_size: ${var.squid_cluster_max_size}
+    cluster_min_size: ${var.squid_cluster_min_size}
+    customer_id: ${var.customer_id}
+    env_log_group: ${aws_cloudwatch_log_group.main_log_group.name}
+    env_squid_name: squid-auto-${var.vpc_name}
+    env_vpc_cidr: ${aws_vpc.main.cidr_block}
+    env_vpc_id: ${aws_vpc.main.id}
+    env_vpc_name: ${var.vpc_name}
+    extra_vars: ${var.squid_extra_vars}
+    fips: ${var.fips}
+    image_name_search_criteria: ${var.squid_image_search_criteria}
+    main_public_route: ${aws_route_table.public.id}
+    network_expansion: ${var.network_expansion}
+    organization_name: ${var.organization_name}
+    peering_cidr: ${var.peering_cidr}
+    route_53_zone_id: ${aws_route53_zone.main.id}
+    secondary_cidr_block: ${var.secondary_cidr_block}
+    slack_webhook: ${var.slack_webhook}
+    source: ../squid_auto
+    squid_availability_zones: ${var.availability_zones}
+    squid_depends_on: ${aws_nat_gateway.nat_gw.id}
+    squid_instance_drive_size: ${var.squid_instance_drive_size}
+    squid_instance_type: ${var.squid_instance_type}
+    squid_proxy_subnet: '${var.network_expansion ? cidrsubnet(var.vpc_cidr_block,
+      5, 3) : cidrsubnet(var.vpc_cidr_block, 4, 1)}'
+    ssh_key_name: ${var.ssh_key_name}
+- data-bucket:
+    cloudwatchlogs_group: ${aws_cloudwatch_log_group.main_log_group.arn}
+    deploy_cloud_trail: ${var.deploy_cloud_trail}
+    environment: ${var.vpc_name}
+    source: ../upload-data-bucket
+    vpc_name: ${var.vpc_name}
+- fence-bot-user:
+    bucket_access_arns: ${var.fence-bot_bucket_access_arns}
+    bucket_name: ${module.data-bucket.data-bucket_name}
+    source: ../fence-bot-user
+    vpc_name: ${var.vpc_name}
+resource:
+- aws_vpc:
+    main:
+      cidr_block: ${var.vpc_cidr_block}
+      enable_dns_hostnames: true
+      lifecycle:
+      - ignore_changes:
+        - ${tags}
+      tags:
+        Environment: ${var.vpc_name}
+        Name: ${var.vpc_name}
+        Organization: ${var.organization_name}
+- aws_flow_log:
+    main:
+      count: '${var.vpc_flow_logs ? 1 : 0}'
+      iam_role_arn: ${aws_iam_role.flow_logs[count.index].arn}
+      log_destination: ${aws_cloudwatch_log_group.main_log_group.arn}
+      traffic_type: ${var.vpc_flow_traffic}
+      vpc_id: ${aws_vpc.main.id}
+- aws_iam_role:
+    flow_logs:
+      assume_role_policy: "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n\
+        \    {\n      \"Sid\": \"\",\n      \"Effect\": \"Allow\",\n      \"Principal\"\
+        : {\n        \"Service\": \"vpc-flow-logs.amazonaws.com\"\n      },\n    \
+        \  \"Action\": \"sts:AssumeRole\"\n    }\n  ]\n}"
+      count: '${var.vpc_flow_logs ? 1 : 0}'
+      name: ${var.vpc_name}_flow_logs_role
+- aws_iam_role_policy:
+    example:
+      count: '${var.vpc_flow_logs ? 1 : 0}'
+      name: ${var.vpc_name}_flow_logs_policy
+      policy: "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n    \
+        \  \"Action\": [\n        \"logs:CreateLogGroup\",\n        \"logs:CreateLogStream\"\
+        ,\n        \"logs:PutLogEvents\",\n        \"logs:DescribeLogGroups\",\n \
+        \       \"logs:DescribeLogStreams\"\n      ],\n      \"Effect\": \"Allow\"\
+        ,\n      \"Resource\": \"*\"\n    }\n  ]\n}"
+      role: ${aws_iam_role.flow_logs[count.index].id}
+- aws_vpc_ipv4_cidr_block_association:
+    secondary_cidr:
+      cidr_block: ${var.secondary_cidr_block}
+      count: '${var.secondary_cidr_block != "" ? 1 : 0}'
+      vpc_id: ${aws_vpc.main.id}
+- aws_internet_gateway:
+    gw:
+      tags:
+        Environment: ${var.vpc_name}
+        Name: ${var.vpc_name}-igw
+        Organization: ${var.organization_name}
+      vpc_id: ${aws_vpc.main.id}
+- aws_nat_gateway:
+    nat_gw:
+      allocation_id: ${aws_eip.nat_gw.id}
+      subnet_id: ${aws_subnet.public.id}
+      tags:
+        Environment: ${var.vpc_name}
+        Name: ${var.vpc_name}-ngw
+        Organization: ${var.organization_name}
+- aws_route_table:
+    public:
+      lifecycle:
+      - ignore_changes: ${all}
+      route:
+      - cidr_block: 0.0.0.0/0
+        gateway_id: ${aws_internet_gateway.gw.id}
+      - cidr_block: ${var.peering_cidr}
+        vpc_peering_connection_id: ${aws_vpc_peering_connection.vpcpeering.id}
+      tags:
+        Environment: ${var.vpc_name}
+        Name: main
+        Organization: ${var.organization_name}
+      vpc_id: ${aws_vpc.main.id}
+- aws_eip:
+    nat_gw:
+      tags:
+        Environment: ${var.vpc_name}
+        Name: ${var.vpc_name}-ngw-eip
+        Organization: ${var.organization_name}
+      vpc: true
+- aws_default_route_table:
+    default:
+      default_route_table_id: ${aws_vpc.main.default_route_table_id}
+      route:
+      - cidr_block: ${var.peering_cidr}
+        vpc_peering_connection_id: ${aws_vpc_peering_connection.vpcpeering.id}
+      tags:
+        Environment: ${var.vpc_name}
+        Name: default table
+        Organization: ${var.organization_name}
+- aws_main_route_table_association:
+    default:
+      route_table_id: ${aws_default_route_table.default.id}
+      vpc_id: ${aws_vpc.main.id}
+- aws_route_table_association:
+    public:
+      route_table_id: ${aws_route_table.public.id}
+      subnet_id: ${aws_subnet.public.id}
+- aws_subnet:
+    public:
+      availability_zone: ${data.aws_availability_zones.available.names[1]}
+      cidr_block: '${var.network_expansion ? cidrsubnet(var.vpc_cidr_block, 5, 2)
+        : cidrsubnet(var.vpc_cidr_block, 4, 0)}'
+      lifecycle:
+      - ignore_changes:
+        - ${tags}
+        - ${availability_zone}
+      map_public_ip_on_launch: true
+      tags: '${tomap({"Name": "public", "Organization": "${var.organization_name}",
+        "Environment": "${var.vpc_name}"})}'
+      vpc_id: ${aws_vpc.main.id}
+- aws_cloudwatch_log_group:
+    main_log_group:
+      name: ${var.vpc_name}
+      retention_in_days: ${var.commons_log_retention}
+      tags:
+        Environment: ${var.vpc_name}
+        Organization: ${var.organization_name}
+- aws_cloudwatch_log_subscription_filter:
+    csoc_subscription:
+      count: '${var.csoc_managed && var.send_logs_to_csoc ? 1 : 0}'
+      destination_arn: 'arn:aws:logs:${data.aws_region.current.name}:${var.csoc_managed
+        ? var.csoc_account_id : data.aws_caller_identity.current.account_id}:destination:${var.vpc_name}_logs_destination'
+      filter_pattern: ''
+      lifecycle:
+      - ignore_changes:
+        - ${distribution}
+      log_group_name: ${var.vpc_name}
+      name: ${var.vpc_name}_subscription
+- aws_route53_zone:
+    main:
+      comment: internal dns server for ${var.vpc_name}
+      name: internal.io
+      tags:
+        Environment: ${var.vpc_name}
+        Organization: ${var.organization_name}
+      vpc:
+      - vpc_id: ${aws_vpc.main.id}
+- aws_vpc_peering_connection:
+    vpcpeering:
+      auto_accept: false
+      lifecycle:
+      - ignore_changes: ${all}
+      peer_owner_id: '${var.csoc_managed ? var.csoc_account_id : data.aws_caller_identity.current.account_id}'
+      peer_vpc_id: ${var.peering_vpc_id}
+      tags:
+        Environment: ${var.vpc_name}
+        Name: VPC Peering between ${var.vpc_name} and adminVM vpc
+        Organization: ${var.organization_name}
+      vpc_id: ${aws_vpc.main.id}
+- aws_route:
+    default_csoc:
+      count: '${var.csoc_managed ? 0 : 1}'
+      destination_cidr_block: ${var.vpc_cidr_block}
+      route_table_id: ${data.aws_route_tables.control_routing_table[count.index].id}
+      vpc_peering_connection_id: ${aws_vpc_peering_connection.vpcpeering.id}
+- aws_iam_user:
+    es_user:
+      name: ${var.vpc_name}_es_user
+      tags:
+        Environment: ${var.vpc_name}
+        Organization: ${var.organization_name}
+- aws_iam_access_key:
+    es_user_key:
+      user: ${aws_iam_user.es_user.name}
+---
+data:
+- aws_region:
+    current: {}
+- aws_availability_zones:
+    available: {}
+- aws_caller_identity:
+    current: {}
+- aws_route_tables:
+    control_routing_table:
+      count: '${var.csoc_managed ? 0 : 1}'
+      vpc_id: ${var.peering_vpc_id}
+---
+output:
+- zone_zid:
+    value: ${aws_route53_zone.main.zone_id}
+- zone_id:
+    value: ${aws_route53_zone.main.id}
+- zone_name:
+    value: ${aws_route53_zone.main.name}
+- vpc_id:
+    value: ${aws_vpc.main.id}
+- vpc_cidr_block:
+    value: ${aws_vpc.main.cidr_block}
+- public_route_table_id:
+    value: ${aws_route_table.public.id}
+- gateway_id:
+    value: ${aws_internet_gateway.gw.id}
+- public_subnet_id:
+    value: ${aws_subnet.public.id}
+- security_group_local_id:
+    value: ${aws_security_group.local.id}
+- nat_gw_id:
+    value: ${aws_nat_gateway.nat_gw.id}
+- ssh_key_name:
+    value: ${var.ssh_key_name}
+- vpc_peering_id:
+    value: ${aws_vpc_peering_connection.vpcpeering.id}
+- es_user_key:
+    value: ${aws_iam_access_key.es_user_key.secret}
+- es_user_key_id:
+    value: ${aws_iam_access_key.es_user_key.id}
+- cwlogs:
+    value: ${aws_cloudwatch_log_group.main_log_group.arn}
+- fence-bot_id:
+    value: ${module.fence-bot-user.fence-bot_id}
+- fence-bot_secret:
+    value: ${module.fence-bot-user.fence-bot_secret}
+- data-bucket_name:
+    value: ${module.data-bucket.data-bucket_name}
+- squid_auto:
+    value: ${module.squid-auto.squid_auto-name}
+---
+locals:
+- cidrs: '${var.secondary_cidr_block != "" ? [''${var.vpc_cidr_block}'', ''${var.peering_cidr}'',
+    ''${var.secondary_cidr_block}''] : [''${var.vpc_cidr_block}'', ''${var.peering_cidr}'']}'
+  cidrs_no_peering: '${var.secondary_cidr_block != "" ? [''${var.vpc_cidr_block}'',
+    ''${var.secondary_cidr_block}''] : [''${var.vpc_cidr_block}'']}'
+resource:
+- aws_security_group:
+    local:
+      description: security group that only allow internal tcp traffics
+      egress:
+      - cidr_blocks: ${local.cidrs_no_peering}
+        from_port: 0
+        protocol: '-1'
+        to_port: 0
+      ingress:
+      - cidr_blocks: ${local.cidrs}
+        from_port: 0
+        protocol: '-1'
+        to_port: 0
+      name: local
+      tags:
+        Environment: ${var.vpc_name}
+        Name: ${var.vpc_name}-local-sec-group
+        Organization: ${var.organization_name}
+      vpc_id: ${aws_vpc.main.id}
+- aws_security_group:
+    out:
+      description: security group that allow outbound traffics
+      egress:
+      - cidr_blocks:
+        - 0.0.0.0/0
+        from_port: 0
+        protocol: '-1'
+        to_port: 0
+      name: out
+      tags:
+        Environment: ${var.vpc_name}
+        Name: ${var.vpc_name}-outbound-traffic
+        Organization: ${var.organization_name}
+      vpc_id: ${aws_vpc.main.id}
+- aws_security_group:
+    proxy:
+      count: '${var.deploy_single_proxy ? 1 : 0 }'
+      description: allow inbound tcp at 3128
+      ingress:
+      - cidr_blocks: ${local.cidrs}
+        from_port: 0
+        protocol: TCP
+        to_port: 3128
+      name: squid-proxy
+      tags:
+        Environment: ${var.vpc_name}
+        Organization: Basic Service
+      vpc_id: ${aws_vpc.main.id}
+---
+variable:
+- ami_account_id:
+    default: 099720109477
+- vpc_name: {}
+- vpc_cidr_block:
+    default: 172.24.17.0/20
+- secondary_cidr_block:
+    default: ''
+- vpc_flow_logs:
+    default: false
+- vpc_flow_traffic:
+    default: ALL
+- ssh_key_name: {}
+- csoc_account_id:
+    default: '433568766270'
+- peering_cidr:
+    default: 10.128.0.0/20
+- peering_vpc_id:
+    default: vpc-e2b51d99
+- csoc_managed:
+    default: true
+- organization_name:
+    default: Basic Service
+    description: for tagging purposes
+- availability_zones:
+    default:
+    - us-east-1a
+    - us-east-1c
+    - us-east-1d
+    description: AZ to be used by EKS nodes
+- squid_image_search_criteria:
+    default: ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-*
+    description: Search criteria for squid AMI look up
+- squid_instance_drive_size:
+    default: 8
+    description: Volume size for the squid instance
+- squid_instance_type:
+    default: t3.medium
+    description: Instance type for HA squid instances
+- squid_bootstrap_script:
+    default: squid_running_on_docker.sh
+    description: Script to run on deployment for the HA squid instances
+- deploy_single_proxy:
+    default: false
+    description: Single instance plus HA
+- squid_extra_vars:
+    description: additional variables to pass along with the bootstrapscript
+- branch:
+    default: master
+    description: For testing purposes, when something else than the master
+- fence-bot_bucket_access_arns:
+    description: When fence bot has to access another bucket that wasn't created by
+      the VPC module
+- deploy_ha_squid:
+    default: false
+    description: should you want to deploy HA-squid
+- squid_cluster_desired_capasity:
+    default: 2
+    description: If ha squid is enabled and you want to set your own capasity
+- squid_cluster_min_size:
+    default: 1
+    description: If ha squid is enabled and you want to set your own min size
+- squid_cluster_max_size:
+    default: 3
+    description: If ha squid is enabled and you want to set your own max size
+- single_squid_instance_type:
+    description: Single squid instance type
+- network_expansion:
+    default: false
+    description: Let k8s wokers use /22 subnets per AZ
+- activation_id:
+    default: ''
+- customer_id:
+    default: ''
+- slack_webhook:
+    default: ''
+- fips:
+    default: false
+- deploy_cloud_trail:
+    default: true
+- send_logs_to_csoc:
+    default: true
+- commons_log_retention:
+    default: '3650'
+    description: value in days for the cloudwatch log retention period

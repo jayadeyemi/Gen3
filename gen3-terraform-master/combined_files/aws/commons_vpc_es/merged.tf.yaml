@@ -1,0 +1,51 @@
+output:
+- kibana_endpoint:
+    value: ${module.commons_vpc_es[0].kibana_endpoint}
+- es_endpoint:
+    value: ${module.commons_vpc_es[0].es_endpoint}
+---
+module:
+- commons_vpc_es:
+    count: '${var.deploy_es ? 1 : 0}'
+    ebs_volume_size_gb: ${var.ebs_volume_size_gb}
+    encryption: ${var.encryption}
+    es_linked_role: ${var.es_linked_role}
+    es_version: ${var.es_version}
+    instance_count: ${var.instance_count}
+    instance_type: ${var.instance_type}
+    organization_name: ${var.organization_name}
+    source: ../modules/commons-vpc-es
+    vpc_id: ${var.vpc_id}
+    vpc_name: ${var.vpc_name}
+terraform:
+- backend:
+  - s3:
+      encrypt: 'true'
+  required_providers:
+  - aws:
+      source: hashicorp/aws
+      version: ~> 5.0
+---
+variable:
+- vpc_name: {}
+- vpc_id:
+    default: ''
+- instance_type:
+    default: m4.large.elasticsearch
+- ebs_volume_size_gb:
+    default: 20
+- encryption:
+    default: 'true'
+- instance_count:
+    default: 3
+- organization_name:
+    default: Basic Service
+    description: For tagging purposes
+- es_version:
+    default: '6.8'
+    description: What version to use when deploying ES
+- es_linked_role:
+    default: true
+    description: Whether or no to deploy a linked roll for ES
+- deploy_es:
+    default: true

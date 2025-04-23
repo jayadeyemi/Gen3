@@ -1,0 +1,190 @@
+output:
+- kubeconfig:
+    value: ${module.eks[0].kubeconfig}
+- config_map_aws_auth:
+    value: ${module.eks[0].config_map_aws_auth}
+- cluster_oidc_provider_url:
+    value: ${module.eks[0].cluster_oidc_provider_url}
+- cluster_oidc_provider_arn:
+    value: ${module.eks[0].cluster_oidc_provider_arn}
+---
+module:
+- eks:
+    activation_id: ${var.activation_id}
+    availability_zones: ${var.availability_zones}
+    bootstrap_script: ${var.bootstrap_script}
+    ci_run: ${var.ci_run}
+    cidrs_to_route_to_gw: ${var.cidrs_to_route_to_gw}
+    count: '${var.deploy_eks ? 1 : 0}'
+    customer_id: ${var.customer_id}
+    deploy_workflow: ${var.deploy_workflow}
+    domain_test: ${var.domain_test}
+    dual_proxy: ${var.dual_proxy}
+    ec2_keyname: ${var.ec2_keyname}
+    eks_public_access: ${var.eks_public_access}
+    eks_version: ${var.eks_version}
+    enable_vpc_endpoints: ${var.enable_vpc_endpoints}
+    fips: ${var.fips}
+    fips_ami_kms: ${var.fips_ami_kms}
+    fips_enabled_ami: ${var.fips_enabled_ami}
+    ha_squid: ${var.ha_squid}
+    iam-serviceaccount: ${var.iam-serviceaccount}
+    instance_type: ${var.instance_type}
+    jupyter_asg_desired_capacity: ${var.jupyter_asg_desired_capacity}
+    jupyter_asg_max_size: ${var.jupyter_asg_max_size}
+    jupyter_asg_min_size: ${var.jupyter_asg_min_size}
+    jupyter_bootstrap_script: ${var.jupyter_bootstrap_script}
+    jupyter_instance_type: ${var.jupyter_instance_type}
+    jupyter_worker_drive_size: ${var.jupyter_worker_drive_size}
+    k8s_bootstrap_resources: ${var.k8s_bootstrap_resources}
+    karpernter_version: ${var.karpernter_version}
+    kernel: ${var.kernel}
+    oidc_eks_thumbprint: ${var.oidc_eks_thumbprint}
+    organization_name: ${var.organization_name}
+    peering_cidr: ${var.peering_cidr}
+    peering_vpc_id: ${var.peering_vpc_id}
+    secondary_cidr_block: ${var.secondary_cidr_block}
+    single_az_for_jupyter: ${var.single_az_for_jupyter}
+    sns_topic_arn: ${var.sns_topic_arn}
+    source: ../modules/eks
+    use_asg: ${var.use_asg}
+    use_karpenter: ${var.user_karpenter}
+    users_policy: ${var.users_policy}
+    vpc_id: ${var.vpc_id}
+    vpc_name: ${var.vpc_name}
+    worker_drive_size: ${var.worker_drive_size}
+    workers_subnet_size: ${var.workers_subnet_size}
+    workflow_asg_desired_capacity: ${var.workflow_asg_desired_capacity}
+    workflow_asg_max_size: ${var.workflow_asg_max_size}
+    workflow_asg_min_size: ${var.workflow_asg_min_size}
+    workflow_bootstrap_script: ${var.workflow_bootstrap_script}
+    workflow_instance_type: ${var.workflow_instance_type}
+    workflow_worker_drive_size: ${var.workflow_worker_drive_size}
+terraform:
+- backend:
+  - s3:
+      encrypt: 'true'
+  required_providers:
+  - aws:
+      source: hashicorp/aws
+      version: ~> 5.0
+---
+variable:
+- vpc_name: {}
+- vpc_id:
+    default: ''
+- ec2_keyname:
+    default: someone@uchicago.edu
+- instance_type:
+    default: t3.large
+- jupyter_instance_type:
+    default: t3.large
+- workflow_instance_type:
+    default: t3.2xlarge
+- peering_cidr:
+    default: 10.128.0.0/20
+- secondary_cidr_block:
+    default: ''
+- peering_vpc_id:
+    default: vpc-e2b51d99
+- users_policy: {}
+- worker_drive_size:
+    default: 30
+- eks_version:
+    default: '1.16'
+- workers_subnet_size:
+    default: 24
+- bootstrap_script:
+    default: bootstrap-with-security-updates.sh
+- jupyter_bootstrap_script:
+    default: bootstrap-with-security-updates.sh
+- kernel:
+    default: N/A
+- jupyter_worker_drive_size:
+    default: 30
+- workflow_bootstrap_script:
+    default: bootstrap.sh
+- workflow_worker_drive_size:
+    default: 30
+- cidrs_to_route_to_gw:
+    default: []
+- organization_name:
+    default: Basic Services
+- jupyter_asg_desired_capacity:
+    default: 0
+- jupyter_asg_max_size:
+    default: 10
+- jupyter_asg_min_size:
+    default: 0
+- workflow_asg_desired_capacity:
+    default: 0
+- workflow_asg_max_size:
+    default: 50
+- workflow_asg_min_size:
+    default: 0
+- iam-serviceaccount:
+    default: true
+- domain_test:
+    default: www.google.com
+    description: url for the lambda function to check for the proxy
+- ha_squid:
+    default: false
+    description: Is HA squid deployed?
+- deploy_workflow:
+    default: false
+    description: Deploy workflow nodepool?
+- deploy_jupyter:
+    default: true
+    description: Deploy workflow nodepool?
+- dual_proxy:
+    default: false
+    description: Single instance and HA
+- single_az_for_jupyter:
+    default: false
+    description: Jupyter notebooks on a single AZ
+- oidc_eks_thumbprint:
+    default:
+    - 9e99a48a9960b14926bb7f3b02e22da2b0ab7280
+    description: Thumbprint for the AWS OIDC identity provider
+- sns_topic_arn:
+    default: arn:aws:sns:us-east-1:433568766270:planx-csoc-alerts-topic
+    description: SNS topic ARN for alerts
+- activation_id:
+    default: ''
+- customer_id:
+    default: ''
+- fips:
+    default: false
+- fips_ami_kms:
+    default: arn:aws:kms:us-east-1:707767160287:key/mrk-697897f040ef45b0aa3cebf38a916f99
+- fips_enabled_ami:
+    default: ami-0de87e3680dcb13ec
+- availability_zones:
+    default:
+    - us-east-1a
+    - us-east-1c
+    - us-east-1d
+    description: AZ to be used by EKS nodes
+- deploy_eks:
+    default: true
+- scale_in_protection:
+    default: false
+    description: set scale-in protection on ASG
+- ci_run:
+    default: false
+    description: Don't run local provisioner commands meant for adminvm if running
+      in CI
+- use_asg:
+    default: true
+- use_karpenter:
+    default: false
+- karpenter_version:
+    default: v0.24.0
+- eks_public_access:
+    default: 'true'
+- enable_vpc_endpoints:
+    default: true
+- k8s_bootstrap_resources:
+    default: false
+    description: If set to true, creates resources for bootstrapping a kubernetes
+      cluster (such as karpenter configs and helm releases)

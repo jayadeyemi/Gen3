@@ -1,0 +1,62 @@
+output:
+- vpn_nlb_dns_name:
+    value: ${module.vpn_nlb.vpn_nlb_dns_name}
+---
+module:
+- vpn_nlb:
+    ami_account_id: ${var.ami_account_id}
+    bootstrap_path: ${var.bootstrap_path}
+    bootstrap_script: ${var.bootstrap_script}
+    branch: ${var.branch}
+    csoc_planx_dns_zone_id: ${var.csoc_planx_dns_zone_id}
+    csoc_vm_subnet: ${var.csoc_vm_subnet}
+    csoc_vpn_subnet: ${var.csoc_vpn_subnet}
+    cwl_group_name: ${var.cwl_group_name}
+    env_cloud_name: ${var.env_cloud_name}
+    env_pub_subnet_routetable_id: ${var.env_pub_subnet_routetable_id}
+    env_vpc_id: ${var.env_vpc_id}
+    env_vpn_nlb_name: ${var.env_vpn_nlb_name}
+    image_name_search_criteria: ${var.image_name_search_criteria}
+    organization_name: ${var.organization_name}
+    source: ../modules/vpn_nlb_central_csoc
+    ssh_key_name: ${var.ssh_key_name}
+    vpn_server_subnet: ${var.vpn_server_subnet}
+terraform:
+- backend:
+  - s3:
+      encrypt: 'true'
+  required_providers:
+  - aws:
+      source: hashicorp/aws
+      version: ~> 5.0
+---
+variable:
+- csoc_vpn_subnet: {}
+- csoc_vm_subnet: {}
+- vpn_server_subnet: {}
+- env_vpc_id:
+    default: vpc-e2b51d99
+- env_vpn_nlb_name:
+    default: csoc-prod-vpn
+- env_cloud_name:
+    default: planxprod
+- ami_account_id:
+    default: 099720109477
+- image_name_search_criteria:
+    default: ubuntu/images/hvm-ssd/ubuntu-xenial-16.04-amd64-server-2018*
+- env_pub_subnet_routetable_id:
+    default: rtb-1cb66860
+- csoc_planx_dns_zone_id:
+    default: ZG153R4AYDHHK
+- ssh_key_name:
+    default: rarya_id_rsa
+- bootstrap_path:
+    default: cloud-automation/flavors/vpn_nlb_central/
+- bootstrap_script:
+    default: vpnvm.sh
+- organization_name:
+    default: Basic Services
+- branch:
+    default: master
+- cwl_group_name:
+    default: csoc-prod-vpn.planx-pla.net_log_group

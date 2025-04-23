@@ -1,0 +1,54 @@
+output:
+- cloudwatch_log_group:
+    value: ${module.logging.cloudwatch_log_group}
+- s3_bucket:
+    value: ${module.logging.s3_bucket}
+- log_destination:
+    value: ${module.logging.log_destination}
+---
+module:
+- logging:
+    child_account_id: ${var.child_account_id}
+    common_name: ${var.common_name}
+    csoc_account_id: ${var.csoc_account_id}
+    es: ${var.es}
+    memory_size: ${var.memory_size}
+    s3: ${var.s3}
+    slack_webhook: ${var.slack_webhook}
+    source: ../modules/common-logging
+    threshold: ${var.threshold}
+    timeout: ${var.timeout}
+terraform:
+- backend:
+  - s3:
+      encrypt: 'true'
+  required_providers:
+  - aws:
+      source: hashicorp/aws
+      version: ~> 5.0
+---
+variable:
+- csoc_account_id:
+    default: '433568766270'
+- aws_region:
+    default: us-east-1
+- child_account_id: {}
+- child_account_region:
+    default: us-east-1
+- common_name: {}
+- elasticsearch_domain:
+    default: commons-logs
+- threshold:
+    default: '65.0'
+- slack_webhook:
+    default: ''
+- timeout:
+    default: 300
+- memory_size:
+    default: 512
+- es:
+    default: true
+    description: Persist logs to elasticsearch
+- s3:
+    default: true
+    description: Persist logs to s3

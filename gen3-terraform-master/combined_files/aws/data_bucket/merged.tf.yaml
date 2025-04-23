@@ -1,0 +1,31 @@
+module:
+- s3_bucket:
+    bucket_name: ${var.bucket_name}
+    cloud_trail_count: ${var.cloud_trail_count}
+    environment: ${var.environment}
+    source: ../modules/s3-bucket
+terraform:
+- backend:
+  - s3:
+      encrypt: 'true'
+  required_providers:
+  - aws:
+      source: hashicorp/aws
+      version: ~> 5.0
+---
+output:
+- bucket_name:
+    value: ${module.s3_bucket.bucket_name}
+- log_bucket_name:
+    value: ${module.s3_bucket.log_bucket_name}
+- rw_role_id:
+    value: ${module.s3_bucket.rw_role_id}
+- ro_role_id:
+    value: ${module.s3_bucket.ro_role_id}
+---
+variable:
+- bucket_name: {}
+- environment: {}
+- cloud_trail_count:
+    default: '1'
+    description: Number of cloud trails to create - Limited to 5 trails per region

@@ -1,0 +1,31 @@
+variable:
+- api_key:
+    default: ''
+- app_key:
+    default: ''
+- api_url:
+    default: ''
+- secrets_manager_enabled:
+    default: false
+- datadog_secrets_manager_arn:
+    default: ''
+- commons_url:
+    default: ''
+- commons_name:
+    default: ''
+- project_slack_channel:
+    default: ''
+- test_definitions:
+    type: '${list(object({"endpoint": "string", "target_status_code": "string", "target_response_time":
+      "string", "name": "string", "message": "string"}))}'
+    default: []
+- locations:
+    type: ${list(string)}
+    default: []
+- tags:
+    type: ${list(string)}
+    default: []
+- status:
+    default: ''
+- test_run_frequency_secs:
+    default: ''

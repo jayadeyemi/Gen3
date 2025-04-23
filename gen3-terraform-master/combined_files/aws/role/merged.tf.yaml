@@ -1,0 +1,30 @@
+resource:
+- aws_iam_role:
+    new_role:
+      assume_role_policy: ${var.ar_policy}
+      description: ${var.description}
+      name: ${var.rolename}
+      path: ${var.path}
+terraform:
+- backend:
+  - s3:
+      encrypt: 'true'
+  required_providers:
+  - aws:
+      source: hashicorp/aws
+      version: ~> 5.0
+---
+variable:
+- rolename:
+    description: name of role
+- description:
+    default: Role created with terraform
+    description: description of role
+- path:
+    default: /
+    description: path attribute of role
+- ar_policy:
+    default: "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n     \
+      \ \"Effect\": \"Allow\",\n      \"Principal\": {\"Service\": \"ec2.amazonaws.com\"\
+      },\n      \"Action\": \"sts:AssumeRole\"\n    }\n  ]\n}"
+    description: assume-role policy to attach to the role

@@ -1,0 +1,146 @@
+locals:
+- vpc_id: '${var.vpc_id != "" ? var.vpc_id : data.aws_vpc.the_vpc.id}'
+- es_policy: '${var.role_arn == "" ? local.policy1 : local.policy2}'
+  policy1: "{\n    \"Version\": \"2012-10-17\",\n    \"Statement\": [\n        {\n\
+    \            \"Action\": \"es:*\",\n            \"Principal\": {\n           \
+    \   \"AWS\": [\n                \"${data.aws_iam_user.es_user.arn}\"\n       \
+    \       ]\n            },\n            \"Effect\": \"Allow\",\n            \"\
+    Resource\": \"*\"\n        }\n    ]\n}"
+  policy2: "{\n    \"Version\": \"2012-10-17\",\n    \"Statement\": [\n        {\n\
+    \            \"Action\": \"es:*\",\n            \"Principal\": {\n           \
+    \   \"AWS\": [\n                \"${data.aws_iam_user.es_user.arn}\",\n      \
+    \          \"${var.role_arn}\"\n              ]\n            },\n            \"\
+    Effect\": \"Allow\",\n            \"Resource\": \"*\"\n        }\n    ]\n}"
+resource:
+- aws_iam_service_linked_role:
+    es:
+      aws_service_name: es.amazonaws.com
+      count: '${var.es_linked_role ? 1 : 0}'
+- aws_security_group:
+    private_es:
+      description: security group that allow es port out
+      egress:
+      - cidr_blocks: ${local.all_cidr_blocks}
+        from_port: 0
+        protocol: '-1'
+        to_port: 0
+      ingress:
+      - cidr_blocks: ${local.all_cidr_blocks}
+        from_port: 0
+        protocol: '-1'
+        to_port: 0
+      name: private_es
+      tags:
+        Environment: ${var.vpc_name}
+        Organization: ${var.organization_name}
+      vpc_id: ${local.vpc_id}
+- aws_cloudwatch_log_resource_policy:
+    es_logs:
+      policy_document: "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n  \
+        \  {\n      \"Effect\": \"Allow\",\n      \"Principal\": {\n        \"Service\"\
+        : \"es.amazonaws.com\"\n      },\n      \"Action\": [\n        \"logs:PutLogEvents\"\
+        ,\n        \"logs:PutLogEventsBatch\",\n        \"logs:CreateLogStream\"\n\
+        \      ],\n      \"Resource\": \"${data.aws_cloudwatch_log_group.logs_group.arn}:*\"\
+        \n    }\n  ]\n}"
+      policy_name: es_logs_for_${var.vpc_name}
+- aws_elasticsearch_domain:
+    gen3_metadata:
+      access_policies: ${local.es_policy}
+      advanced_options:
+        rest.action.multi.allow_explicit_index: 'true'
+      cluster_config:
+      - instance_count: ${var.instance_count}
+        instance_type: ${var.instance_type}
+      depends_on:
+      - ${aws_cloudwatch_log_resource_policy.es_logs}
+      - ${aws_iam_service_linked_role.es}
+      domain_name: '${var.es_name != "" ? var.es_name : "${var.vpc_name}-gen3-metadata"}'
+      ebs_options:
+      - ebs_enabled: 'true'
+        volume_size: ${var.ebs_volume_size_gb}
+      elasticsearch_version: ${var.es_version}
+      encrypt_at_rest:
+      - enabled: ${var.encryption}
+      lifecycle:
+      - ignore_changes:
+        - ${elasticsearch_version}
+      log_publishing_options:
+      - cloudwatch_log_group_arn: ${data.aws_cloudwatch_log_group.logs_group.arn}:*
+        enabled: 'true'
+        log_type: ES_APPLICATION_LOGS
+      node_to_node_encryption:
+      - enabled: ${var.encryption}
+      snapshot_options:
+      - automated_snapshot_start_hour: 23
+      tags:
+        Environment: ${var.vpc_name}
+        Name: gen3_metadata
+        Organization: ${var.organization_name}
+      vpc_options:
+      - security_group_ids:
+        - ${aws_security_group.private_es.id}
+        subnet_ids: ${data.aws_subnets.private.ids}
+---
+data:
+- aws_availability_zones:
+    available:
+      state: available
+- aws_vpcs:
+    vpcs:
+      tags:
+        Name: ${var.vpc_name}
+- aws_vpc:
+    the_vpc:
+      id: ${data.aws_vpcs.vpcs.ids[0]}
+- aws_iam_user:
+    es_user:
+      user_name: ${var.vpc_name}_es_user
+- aws_cloudwatch_log_group:
+    logs_group:
+      name: ${var.vpc_name}
+- aws_subnets:
+    private:
+      filter:
+      - name: vpc-id
+        values:
+        - ${data.aws_vpc.the_vpc.id}
+      tags:
+        Name: private_db_alt
+locals:
+- all_cidr_blocks: '${[for assoc in data.aws_vpc.the_vpc.cidr_block_associations :
+    assoc.cidr_block]}'
+---
+output:
+- kibana_endpoint:
+    value: ${aws_elasticsearch_domain.gen3_metadata.kibana_endpoint}
+- es_endpoint:
+    value: ${aws_elasticsearch_domain.gen3_metadata.endpoint}
+- es_arn:
+    value: ${aws_elasticsearch_domain.gen3_metadata.arn}
+---
+variable:
+- vpc_name: {}
+- es_name:
+    default: ''
+- vpc_id:
+    default: ''
+- instance_type:
+    default: m4.large.elasticsearch
+- ebs_volume_size_gb:
+    default: 20
+- encryption:
+    default: 'true'
+- instance_count:
+    default: 3
+- organization_name:
+    default: Basic Service
+    description: For tagging purposes
+- es_version:
+    default: '7.10'
+    description: What version to use when deploying ES
+- es_linked_role:
+    default: true
+    description: Whether or no to deploy a linked roll for ES
+- role_arn:
+    default: ''
+    description: The ARN of the role to use for ES

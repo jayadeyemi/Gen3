@@ -1,0 +1,50 @@
+output:
+- waf_arn:
+    description: WAF arn - annotate the cluster ingress
+    value: ${module.aws_waf[0].waf_arn}
+---
+module:
+- aws_waf:
+    additional_rules: ${var.additional_rules}
+    base_rules: ${var.base_rules}
+    count: '${var.deploy_waf ? 1 : 0}'
+    source: ../modules/waf
+    vpc_name: ${var.vpc_name}
+terraform:
+- backend:
+  - s3:
+      encrypt: 'true'
+  required_providers:
+  - aws:
+      source: hashicorp/aws
+      version: ~> 5.0
+---
+variable:
+- deploy_waf:
+    default: false
+- vpc_name: {}
+- base_rules:
+    default:
+    - managed_rule_group_name: AWSManagedRulesAmazonIpReputationList
+      override_to_count:
+      - AWSManagedReconnaissanceList
+      priority: 0
+    - managed_rule_group_name: AWSManagedRulesPHPRuleSet
+      override_to_count:
+      - PHPHighRiskMethodsVariables_HEADER
+      - PHPHighRiskMethodsVariables_QUERYSTRING
+      - PHPHighRiskMethodsVariables_BODY
+      priority: 1
+    - managed_rule_group_name: AWSManagedRulesWordPressRuleSet
+      override_to_count:
+      - WordPressExploitableCommands_QUERYSTRING
+      - WordPressExploitablePaths_URIPATH
+      priority: 2
+    description: Base AWS Managed Rules
+    type: '${list(object({"managed_rule_group_name": "string", "priority": "number",
+      "override_to_count": "${list(string)}"}))}'
+- additional_rules:
+    default: []
+    description: Additional AWS Managed Rules
+    type: '${list(object({"managed_rule_group_name": "string", "priority": "number",
+      "override_to_count": "${list(string)}"}))}'

@@ -1,0 +1,52 @@
+data:
+- aws_s3_bucket:
+    data-bucket:
+      bucket: ${var.bucket_name}
+---
+resource:
+- aws_iam_user:
+    fence-bot:
+      name: ${var.vpc_name}_fence-bot
+- aws_iam_access_key:
+    fence-bot_user_key:
+      user: ${aws_iam_user.fence-bot.name}
+- aws_iam_user_policy:
+    fence-bot_policy:
+      lifecycle:
+      - ignore_changes:
+        - ${policy}
+      name: ${var.vpc_name}_fence-bot_policy
+      policy: "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n    \
+        \  \"Action\": [\n        \"s3:PutObject\",\n        \"s3:GetObject\",\n \
+        \       \"s3:DeleteObject\"\n      ],\n      \"Effect\": \"Allow\",\n    \
+        \  \"Resource\": [\"${data.aws_s3_bucket.data-bucket.arn}/*\"]\n    },\n \
+        \   {\n       \"Action\": [\n         \"s3:List*\",\n         \"s3:Get*\"\n\
+        \       ],\n      \"Effect\": \"Allow\",\n      \"Resource\": [\"${data.aws_s3_bucket.data-bucket.arn}/*\"\
+        , \"${data.aws_s3_bucket.data-bucket.arn}\"]\n    }\n  ]\n}"
+      user: ${aws_iam_user.fence-bot.name}
+- aws_iam_user_policy:
+    fence-bot_extra_policy:
+      count: ${length(var.bucket_access_arns)}
+      name: ${var.vpc_name}_fence-bot_policy_${count.index}
+      policy: "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n    \
+        \  \"Action\": [\n        \"s3:PutObject\",\n        \"s3:GetObject\",\n \
+        \       \"s3:DeleteObject\"\n      ],\n      \"Effect\": \"Allow\",\n    \
+        \  \"Resource\": [\"${var.bucket_access_arns[count.index]}/*\"]\n    },\n\
+        \    {\n       \"Action\": [\n         \"s3:List*\",\n         \"s3:Get*\"\
+        \n       ],\n      \"Effect\": \"Allow\",\n      \"Resource\": [\"${var.bucket_access_arns[count.index]}/*\"\
+        , \"${var.bucket_access_arns[count.index]}\"]\n    }\n  ]\n}"
+      user: ${aws_iam_user.fence-bot.name}
+---
+output:
+- fence-bot_secret:
+    value: ${aws_iam_access_key.fence-bot_user_key.secret}
+- fence-bot_id:
+    value: ${aws_iam_access_key.fence-bot_user_key.id}
+---
+variable:
+- vpc_name: {}
+- bucket_name: {}
+- bucket_access_arns:
+    default: []
+    description: When fence bot has to access another bucket that wasn't created by
+      the VPC module

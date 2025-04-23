@@ -1,0 +1,184 @@
+data:
+- aws_caller_identity:
+    current: {}
+- aws_vpcs:
+    vpcs:
+      tags:
+        Name: ${var.vpc_name}
+- aws_security_group:
+    private:
+      name: local
+      vpc_id: ${data.aws_vpc.the_vpc.id}
+- aws_vpc:
+    the_vpc:
+      id: ${data.aws_vpcs.vpcs.ids[0]}
+---
+locals:
+- aurora-creds-template: "{\n    \"aurora\": {\n        \"db_host\": \"${aws_rds_cluster.postgresql.endpoint}\"\
+    ,\n        \"db_username\": \"${aws_rds_cluster.postgresql.master_username}\"\
+    ,\n        \"db_password\": \"${aws_rds_cluster.postgresql.master_password}\"\
+    ,\n    }\n}"
+- pg_family_version: ${replace(var.cluster_engine_version, "/\\.[0-9]/", "")}
+module:
+- secrets_manager:
+    count: '${var.secrets_manager_enabled ? 1 : 0}'
+    secret: ${aws_rds_cluster.postgresql.master_password}
+    secret_name: aurora-master-password
+    source: ../secrets_manager
+    vpc_name: ${var.vpc_name}
+resource:
+- random_password:
+    password:
+      length: ${var.password_length}
+      special: false
+- aws_rds_cluster:
+    postgresql:
+      apply_immediately: ${var.apply_immediate}
+      backup_retention_period: ${var.backup_retention_period}
+      cluster_identifier: ${var.vpc_name}-${var.cluster_identifier}
+      db_cluster_parameter_group_name: ${aws_rds_cluster_parameter_group.aurora_cdis_pg.name}
+      db_subnet_group_name: ${var.vpc_name}_private_group
+      engine: ${var.cluster_engine}
+      engine_mode: ${var.engine_mode}
+      engine_version: ${var.cluster_engine_version}
+      final_snapshot_identifier: ${var.vpc_name}-${var.final_snapshot_identifier}
+      kms_key_id: ${var.db_kms_key_id}
+      lifecycle:
+      - ignore_changes:
+        - ${kms_key_id}
+        - ${engine_version}
+      master_password: ${random_password.password.result}
+      master_username: ${var.master_username}
+      preferred_backup_window: ${var.preferred_backup_window}
+      serverlessv2_scaling_configuration:
+      - max_capacity: ${var.serverlessv2_scaling_max_capacity}
+        min_capacity: ${var.serverlessv2_scaling_min_capacity}
+      skip_final_snapshot: ${var.skip_final_snapshot}
+      storage_encrypted: ${var.storage_encrypted}
+      vpc_security_group_ids:
+      - ${data.aws_security_group.private.id}
+- aws_rds_cluster_instance:
+    postgresql:
+      cluster_identifier: ${aws_rds_cluster.postgresql.id}
+      db_subnet_group_name: ${aws_rds_cluster.postgresql.db_subnet_group_name}
+      engine: ${aws_rds_cluster.postgresql.engine}
+      engine_version: ${aws_rds_cluster.postgresql.engine_version}
+      identifier: ${var.vpc_name}-${var.cluster_instance_identifier}
+      instance_class: ${var.cluster_instance_class}
+      lifecycle:
+      - ignore_changes:
+        - ${engine_version}
+- local_sensitive_file:
+    aurora_creds:
+      content: ${local.aurora-creds-template}
+      count: '${var.secrets_manager_enabled ? 0 : 1}'
+      filename: ${path.cwd}/${var.vpc_name}_output/aurora-creds.json
+- aws_rds_cluster_parameter_group:
+    aurora_cdis_pg:
+      family: aurora-postgresql${local.pg_family_version}
+      lifecycle:
+      - ignore_changes: ${all}
+      name: ${var.vpc_name}-aurora-cdis-pg
+      parameter:
+      - name: cpu_index_tuple_cost
+        value: '0.000005'
+      - name: cpu_tuple_cost
+        value: '0.7'
+      - name: log_duration
+        value: '1'
+      - name: log_min_duration_statement
+        value: '0'
+      - name: random_page_cost
+        value: '0.7'
+      - name: password_encryption
+        value: scram-sha-256
+---
+output:
+- aurora_cluster_writer_endpoint:
+    description: Aurora cluster writer instance endpoint
+    value: ${aws_rds_cluster.postgresql.endpoint}
+- aurora_cluster_reader_endpoint:
+    description: Aurora cluster reader endpoint
+    value: ${aws_rds_cluster.postgresql.reader_endpoint}
+- aurora_cluster_master_username:
+    description: Aurora cluster master username
+    value: ${aws_rds_cluster.postgresql.master_username}
+- aurora_cluster_master_password:
+    description: Aurora cluster master user's password
+    sensitive: true
+    value: ${aws_rds_cluster.postgresql.master_password}
+---
+variable:
+- vpc_name: {}
+- secrets_manager_enabled:
+    default: false
+- cluster_identifier:
+    default: aurora-cluster
+    description: Cluster Identifier
+    type: string
+- cluster_instance_identifier:
+    default: aurora-cluster-instance
+    description: Cluster Instance Identifier
+    type: string
+- cluster_instance_class:
+    default: db.serverless
+    description: Cluster Instance Class
+    type: string
+- cluster_engine:
+    default: aurora-postgresql
+    description: Aurora database engine type
+    type: string
+- cluster_engine_version:
+    default: '13.7'
+    description: Aurora database engine version.
+    type: string
+- master_username:
+    default: postgres
+    description: Master DB username
+    type: string
+- storage_encrypted:
+    default: true
+    description: Specifies whether storage encryption is enabled
+    type: bool
+- apply_immediate:
+    default: true
+    description: Instruct the service to apply the change immediately. This can result
+      in a brief downtime as the server reboots. See the AWS Docs on RDS Maintenance
+      for more information
+    type: bool
+- engine_mode:
+    default: provisioned
+    description: use provisioned for Serverless v2 RDS cluster
+    type: string
+- serverlessv2_scaling_min_capacity:
+    default: '0.5'
+    description: Serverless v2 RDS cluster minimum scaling capacity in ACUs
+    type: string
+- serverlessv2_scaling_max_capacity:
+    default: '10.0'
+    description: Serverless v2 RDS cluster maximum scaling capacity in ACUs
+    type: string
+- skip_final_snapshot:
+    default: false
+    description: Determines whether a final DB snapshot is created before the DB cluster
+      is deleted
+    type: bool
+- final_snapshot_identifier:
+    default: aurora-cluster-snapshot-final
+    description: The name of your final DB snapshot when this DB cluster is deleted
+    type: string
+- backup_retention_period:
+    default: 10
+    description: The days to retain backups for
+    type: number
+- preferred_backup_window:
+    default: 02:00-03:00
+    description: The daily time range during which automated backups are created if
+      automated backups are enabled using the BackupRetentionPeriod parameter
+    type: string
+- password_length:
+    default: 16
+    description: The length of the password string
+    type: number
+- db_kms_key_id:
+    default: ''

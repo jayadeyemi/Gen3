@@ -1,0 +1,41 @@
+resource:
+- aws_iam_role_policy_attachment:
+    sns-access:
+      policy_arn: arn:aws:iam::aws:policy/AmazonSNSFullAccess
+      role: ${data.aws_iam_role.workers_role.name}
+- aws_sns_topic:
+    user_updates:
+      display_name: ${var.topic_display}
+      name: ${var.vpc_name}-user-updates-topic
+- null_resource:
+    subscription:
+      count: ${length(var.emails)}
+      provisioner:
+      - local-exec:
+          command: aws sns subscribe --topic-arn ${aws_sns_topic.user_updates.arn}
+            --protocol email --notification-endpoint ${var.emails[count.index]}
+---
+data:
+- aws_caller_identity:
+    current: {}
+- aws_region:
+    current: {}
+- aws_iam_role:
+    workers_role:
+      name: '${var.cluster_type == "EKS" ? replace("eks_VPC_workers_role","VPC",var.vpc_name)
+        :  replace(replace("REGION-VPC-worker","VPC",var.vpc_name),"REGION",data.aws_region.current.name)}'
+---
+output:
+- topic_arn:
+    value: ${aws_sns_topic.user_updates.arn}
+---
+variable:
+- vpc_name: {}
+- cluster_type:
+    default: EKS
+- emails:
+    default:
+    - someone@uchicago.edu
+    - someone@uchicago.edu
+- topic_display:
+    default: cronjob manitor

@@ -1,0 +1,277 @@
+data:
+- aws_region:
+    current:
+      provider: ${aws}
+- aws_caller_identity:
+    current: {}
+- aws_iam_policy_document:
+    management-logs_kinesis_policy:
+      statement:
+      - actions:
+        - kinesis:PutRecord
+        effect: Allow
+        resources:
+        - ${aws_kinesis_stream.management-logs_stream.arn}
+      - actions:
+        - iam:PassRole
+        effect: Allow
+        resources:
+        - ${aws_iam_role.management-logs_kinesis_role.arn}
+- aws_iam_policy_document:
+    management-logs_logs_destination_policy:
+      statement:
+      - actions:
+        - logs:PutSubscriptionFilter
+        effect: Allow
+        principals:
+        - identifiers: ${var.accounts_id}
+          type: AWS
+        resources:
+        - ${aws_cloudwatch_log_destination.management-logs_logs_destination.arn}
+- aws_iam_policy_document:
+    lambda_policy_document:
+      statement:
+      - actions:
+        - logs:*
+        effect: Allow
+        resources:
+        - '*'
+      - actions:
+        - kinesis:Get*
+        - kinesis:List*
+        - kinesis:Describe*
+        effect: Allow
+        resources:
+        - ${aws_kinesis_stream.management-logs_stream.arn}
+      - actions:
+        - firehose:PutRecordBatch
+        - firehose:PutRecord
+        effect: Allow
+        resources:
+        - ${aws_kinesis_firehose_delivery_stream.firehose_to_es.arn}
+        - ${aws_kinesis_firehose_delivery_stream.firehose_to_s3.arn}
+- archive_file:
+    lambda_function:
+      output_path: lambda_function_payload.zip
+      source_file: ${path.module}/lambda_function.py
+      type: zip
+---
+data:
+- aws_iam_policy_document:
+    firehose_policy_document:
+      statement:
+      - actions:
+        - s3:ListBucketMultipartUploads
+        - s3:ListBucket
+        - s3:PutObject
+        - s3:GetObject
+        - s3:AbortMultipartUpload
+        - s3:GetBucketLocation
+        effect: Allow
+        resources:
+        - ${aws_s3_bucket.management-logs_bucket.arn}
+        - ${aws_s3_bucket.management-logs_bucket.arn}/*
+      - actions:
+        - logs:*
+        effect: Allow
+        resources:
+        - '*'
+      - actions:
+        - es:*
+        effect: Allow
+        resources:
+        - '*'
+resource:
+- aws_s3_bucket:
+    management-logs_bucket:
+      bucket: management-logs-remote-accounts
+      tags:
+        Environment: ALL
+        Organization: CTDS
+- aws_s3_bucket_server_side_encryption_configuration:
+    management-logs_bucket:
+      bucket: ${aws_s3_bucket.management-logs_bucket.id}
+      rule:
+      - apply_server_side_encryption_by_default:
+        - sse_algorithm: AES256
+- aws_s3_bucket_acl:
+    management-logs_bucket:
+      acl: private
+      bucket: ${aws_s3_bucket.management-logs_bucket.id}
+- aws_s3_bucket_lifecycle_configuration:
+    management-logs_bucket:
+      bucket: ${aws_s3_bucket.management-logs_bucket.id}
+      rule:
+      - expiration:
+        - days: 1827
+        filter:
+        - and:
+          - prefix: forwarded*/
+            tags:
+              autoclean: 'true'
+              rule: log
+        id: forwarded
+        status: Enabled
+        transition:
+        - days: 60
+          storage_class: STANDARD_IA
+        - days: 120
+          storage_class: GLACIER
+- aws_kinesis_stream:
+    management-logs_stream:
+      name: management-logs_stream
+      shard_count: 1
+      tags:
+        Environment: ALL
+        Organization: CTDS
+- aws_iam_role:
+    management-logs_kinesis_role:
+      assume_role_policy: "{\n  \"Version\": \"2008-10-17\",\n  \"Statement\": {\n\
+        \    \"Effect\": \"Allow\",\n    \"Principal\": {\n      \"Service\": \"logs.${data.aws_region.current.name}.amazonaws.com\"\
+        \n    },\n    \"Action\": \"sts:AssumeRole\"\n  }\n}"
+      name: management-logs_kinesis_role
+      path: /
+- aws_iam_role_policy:
+    management-logs_kinesis_policy:
+      name: management-logs_kinesis_policy
+      policy: ${data.aws_iam_policy_document.management-logs_kinesis_policy.json}
+      role: ${aws_iam_role.management-logs_kinesis_role.id}
+- aws_cloudwatch_log_destination:
+    management-logs_logs_destination:
+      name: management-logs_logs_destination
+      role_arn: ${aws_iam_role.management-logs_kinesis_role.arn}
+      target_arn: ${aws_kinesis_stream.management-logs_stream.arn}
+- aws_cloudwatch_log_destination_policy:
+    management-logs_logs_destination_policy:
+      access_policy: ${data.aws_iam_policy_document.management-logs_logs_destination_policy.json}
+      destination_name: ${aws_cloudwatch_log_destination.management-logs_logs_destination.name}
+- aws_iam_role:
+    firehose_role:
+      assume_role_policy: "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n\
+        \    {\n      \"Sid\": \"\",\n      \"Effect\": \"Allow\",\n      \"Principal\"\
+        : {\n        \"Service\": \"firehose.amazonaws.com\"\n      },\n      \"Action\"\
+        : \"sts:AssumeRole\",\n      \"Condition\": {\n        \"StringEquals\": {\n\
+        \          \"sts:ExternalId\": \"${data.aws_caller_identity.current.account_id}\"\
+        \n        }\n      }\n    }\n  ]\n}"
+      name: management-logs_firehose_role
+      path: /
+- aws_iam_role_policy:
+    firehose_policy:
+      name: management-logs_firehose_policy
+      policy: ${data.aws_iam_policy_document.firehose_policy_document.json}
+      role: ${aws_iam_role.firehose_role.id}
+- aws_cloudwatch_log_group:
+    management-logs_group:
+      name: management-logs
+      retention_in_days: 1827
+      tags:
+        Environment: ALL
+        Organization: CTDS
+- aws_cloudwatch_log_stream:
+    firehose_to_ES:
+      log_group_name: ${aws_cloudwatch_log_group.management-logs_group.name}
+      name: firehose_to_ES
+- aws_cloudwatch_log_stream:
+    firehose_to_S3:
+      log_group_name: ${aws_cloudwatch_log_group.management-logs_group.name}
+      name: firehose_to_S3
+- aws_kinesis_firehose_delivery_stream:
+    firehose_to_es:
+      destination: elasticsearch
+      elasticsearch_configuration:
+      - cloudwatch_logging_options:
+        - enabled: true
+          log_group_name: management-logs
+          log_stream_name: firehose_to_ES
+        domain_arn: arn:aws:es:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:domain/${var.elasticsearch_domain}
+        index_name: management_logs
+        index_rotation_period: OneWeek
+        role_arn: ${aws_iam_role.firehose_role.arn}
+        type_name: management_logs
+      name: management-logs_firehose_to_es
+      s3_configuration:
+      - bucket_arn: ${aws_s3_bucket.management-logs_bucket.arn}
+        buffer_interval: 400
+        buffer_size: 10
+        role_arn: ${aws_iam_role.firehose_role.arn}
+- aws_kinesis_firehose_delivery_stream:
+    firehose_to_s3:
+      destination: s3
+      name: management-logs_firehose_to_s3
+      s3_configuration:
+      - bucket_arn: ${aws_s3_bucket.management-logs_bucket.arn}
+        cloudwatch_logging_options:
+        - enabled: true
+          log_group_name: management-logs
+          log_stream_name: firehose_to_S3
+        prefix: forwarded_
+        role_arn: ${aws_iam_role.firehose_role.arn}
+- aws_iam_role:
+    lambda_role:
+      assume_role_policy: "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n\
+        \    {\n      \"Action\": \"sts:AssumeRole\",\n      \"Principal\": {\n  \
+        \      \"Service\": \"lambda.amazonaws.com\"\n      },\n      \"Effect\":\
+        \ \"Allow\",\n      \"Sid\": \"\"\n    }\n  ]\n}"
+      name: management-logs_lambda_role
+- aws_iam_role_policy:
+    lambda_policy:
+      name: management-logs_lambda_policy
+      policy: ${data.aws_iam_policy_document.lambda_policy_document.json}
+      role: ${aws_iam_role.lambda_role.id}
+- aws_lambda_event_source_mapping:
+    event_source_mapping:
+      batch_size: 100
+      enabled: true
+      event_source_arn: ${aws_kinesis_stream.management-logs_stream.arn}
+      function_name: ${aws_lambda_function.logs_decoding.arn}
+      starting_position: TRIM_HORIZON
+- aws_lambda_function:
+    logs_decoding:
+      description: Decode incoming stream
+      environment:
+      - variables:
+          stream_name: management-logs_firehose
+      filename: ${data.archive_file.lambda_function.output_path}
+      function_name: management-logs_lambda_function
+      handler: lambda_function.handler
+      role: ${aws_iam_role.lambda_role.arn}
+      runtime: python3.6
+      source_code_hash: ${data.archive_file.lambda_function.output_base64sha256}
+      timeout: 60
+      tracing_config:
+      - mode: PassThrough
+---
+output:
+- cloudwatch_log_group:
+    value: ${aws_cloudwatch_log_group.management-logs_group.name}
+- s3_bucket:
+    value: ${aws_s3_bucket.management-logs_bucket.bucket}
+- log_destination:
+    value: ${aws_cloudwatch_log_destination.management-logs_logs_destination.name}
+---
+variable:
+- accounts_id:
+    default:
+    - '830067555646'
+    - '474789003679'
+    - '655886864976'
+    - '663707118480'
+    - '728066667777'
+    - '433568766270'
+    - '733512436101'
+    - '584476192960'
+    - '236835632492'
+    - '662843554732'
+    - '803291393429'
+    - '446046036926'
+    - '980870151884'
+    - '562749638216'
+    - '707767160287'
+    - '302170346065'
+    - '636151780898'
+    - '895962626746'
+    - '222487244010'
+    - '369384647397'
+    - '547481746681'
+- elasticsearch_domain:
+    default: commons-logs

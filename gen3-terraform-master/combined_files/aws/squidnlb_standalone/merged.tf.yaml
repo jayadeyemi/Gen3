@@ -1,0 +1,59 @@
+output:
+- squid_nlb_dns_name:
+    value: ${module.squid_nlb.squid_nlb_dns_name}
+---
+module:
+- squid_nlb:
+    allowed_principals_list: ${var.allowed_principals_list}
+    ami_account_id: ${var.ami_account_id}
+    bootstrap_path: ${var.bootstrap_path}
+    bootstrap_script: ${var.bootstrap_script}
+    commons_internal_dns_zone_id: ${var.commons_internal_dns_zone_id}
+    csoc_cidr: ${var.csoc_cidr}
+    env_nlb_name: ${var.env_nlb_name}
+    env_public_subnet_routetable_id: ${var.env_public_subnet_routetable_id}
+    env_vpc_id: ${var.env_vpc_id}
+    env_vpc_octet1: ${var.env_vpc_octet1}
+    env_vpc_octet2: ${var.env_vpc_octet2}
+    env_vpc_octet3: ${var.env_vpc_octet3}
+    image_name_search_criteria: ${var.image_name_search_criteria}
+    source: ../modules/squidnlb
+    ssh_key_name: ${var.ssh_key_name}
+terraform:
+- backend:
+  - s3:
+      encrypt: 'true'
+  required_providers:
+  - aws:
+      source: hashicorp/aws
+      version: ~> 5.0
+---
+variable:
+- env_vpc_octet1:
+    default: '10'
+- env_vpc_octet2:
+    default: '128'
+- env_vpc_octet3:
+    default: '4'
+- env_vpc_id:
+    default: vpc-e2b51d99
+- env_nlb_name:
+    default: squid_nlb
+- ami_account_id:
+    default: 099720109477
+- image_name_search_criteria:
+    default: ubuntu/images/hvm-ssd/ubuntu-xenial-16.04-amd64-server-2018*
+- csoc_cidr:
+    default: 10.128.0.0/20
+- env_public_subnet_routetable_id:
+    default: rtb-23b6685f
+- ssh_key_name:
+    default: rarya_id_rsa
+- allowed_principals_list:
+    default:
+    - arn:aws:iam::707767160287:root
+- bootstrap_path:
+    default: cloud-automation/flavors/squid_nlb/
+- bootstrap_script:
+    default: squidvm.sh
+- commons_internal_dns_zone_id: {}

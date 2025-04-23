@@ -1,0 +1,46 @@
+provider:
+- datadog:
+    api_key: ${var.api_key}
+    api_url: ${var.api_url}
+    app_key: ${var.app_key}
+resource:
+- datadog_synthetics_test:
+    api_tester:
+      assertion:
+      - operator: is
+        target: ${each.value.target_status_code}
+        type: statusCode
+      - operator: lessThan
+        target: ${each.value.target_response_time}
+        type: responseTime
+      for_each: '${{for test in var.test_definitions : test.endpoint => test}}'
+      locations: ${var.locations}
+      message: ${each.value.message}${var.commons_name} ${var.project_slack_channel}
+      name: ${each.value.name}${var.commons_name}
+      options_list:
+      - min_failure_duration: 300
+        tick_every: ${var.test_run_frequency_secs}
+      request_definition:
+      - method: GET
+        url: ${var.commons_url}${each.value.endpoint}
+      status: ${var.status}
+      subtype: http
+      tags: ${var.tags}
+      type: api
+terraform:
+- required_providers:
+  - datadog:
+      source: DataDog/datadog
+---
+variable:
+- api_key: {}
+- app_key: {}
+- api_url: {}
+- commons_url: {}
+- commons_name: {}
+- project_slack_channel: {}
+- test_definitions: {}
+- locations: {}
+- tags: {}
+- status: {}
+- test_run_frequency_secs: {}
