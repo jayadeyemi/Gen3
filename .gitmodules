@@ -1,0 +1,6 @@
+[submodule "gen3-helm"]
+	path = gen3-helm
+	url = https://github.com/jayadeyemi/gen3-helm.git
+[submodule "gen3-terraform"]
+	path = gen3-terraform
+	url = https://github.com/jayadeyemi/gen3-terraform.git
