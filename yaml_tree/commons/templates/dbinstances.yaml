@@ -1,0 +1,50 @@
+{{- if and .Values.rds.enabled (gt (len .Values.instances) 0) -}}
+{{- range .Values.instances }}
+{{- if .enabled }}
+---
+apiVersion: rds.services.k8s.aws/v1alpha1
+kind: DBInstance
+metadata:
+  name: {{ .dbInstanceIdentifier }}
+spec:
+  allocatedStorage: 10
+  autoMinorVersionUpgrade: true
+  backupRetentionPeriod: 4
+  copyTagsToSnapshot: true
+  dbInstanceClass: {{ .dbInstanceClass }}
+  dbInstanceIdentifier: {{ .dbInstanceIdentifier }}
+  dbName: {{ .dbName }}
+  dbParameterGroupName: {{ .parameterGroupName }}
+  dbSnapshotIdentifier: {{ .snapshotIdentifier }}
+  dbSubnetGroupName: {{ .subnetGroupName }}
+  deletionProtection: true
+  engine: postgres
+  engineVersion: "13"
+
+  {{- if and $.Values.secretsManager.enabled .createSecret }}
+  # refer to the AWS Secrets Manager secret created above
+  masterUserSecret:
+    secretRef:
+      name: {{ default (printf "%s-credentials" .dbInstanceIdentifier) .secretName }}
+  {{- else }}
+  # fallback to literal password (not recommended for production)
+  masterUserPassword: {{ quote .masterUserPassword }}
+  {{- end }}
+
+  masterUsername: {{ .masterUsername }}
+  maxAllocatedStorage: 0
+  multiAZ: false
+  preferredBackupWindow: {{ quote .preferredBackupWindow }}
+  preferredMaintenanceWindow: {{ quote .preferredMaintenanceWindow }}
+  storageEncrypted: true
+  storageType: gp2
+  tags:
+    - key: Environment
+      value: Commons1
+    - key: Organization
+      value: Basic Services
+  vpcSecurityGroupIDs:
+{{ toYaml .vpcSecurityGroupIDs | indent 4 }}
+{{- end }}
+{{- end }}
+{{- end }}

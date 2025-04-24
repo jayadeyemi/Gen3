@@ -1,0 +1,5 @@
+variable:
+- instance_ip: {}
+- volume_size: {}
+- dev_name:
+    default: /dev/sdz

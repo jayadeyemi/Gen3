@@ -1,0 +1,13 @@
+output:
+- id:
+    value: ${aws_iam_policy.policy.id}
+- name:
+    value: ${aws_iam_policy.policy.name}
+- arn:
+    value: ${aws_iam_policy.policy.arn}
+- descripton:
+    value: ${aws_iam_policy.policy.description}
+- path:
+    value: ${aws_iam_policy.policy.path}
+- policy:
+    value: ${aws_iam_policy.policy.policy}
