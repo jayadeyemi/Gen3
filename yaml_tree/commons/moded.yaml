@@ -1,0 +1,126 @@
+resource:
+- aws_db_instance:
+    db_fence:
+      count: 
+      allocated_storage: 
+      identifier: 
+      storage_type: 
+      engine:
+      engine_version:
+      parameter_group_name: 
+      instance_class:
+      db_name: 
+      username: 
+      password: 
+      snapshot_identifier: 
+      db_subnet_group_name: 
+      vpc_security_group_ids:
+      - 
+      final_snapshot_identifier: 
+      maintenance_window: 
+      backup_retention_period: 
+      backup_window: 
+      multi_az: 
+      auto_minor_version_upgrade: 
+      storage_encrypted: 
+      max_allocated_storage:
+      tags:
+        Environment: 
+        Organization: 
+
+- aws_db_instance:
+    db_sheepdog:
+      count: 
+      allocated_storage: 
+      identifier: 
+      storage_type: 
+      engine: 
+      engine_version: 
+      parameter_group_name: 
+      instance_class: 
+      db_name: 
+      username: 
+      password: 
+      snapshot_identifier: 
+      db_subnet_group_name: 
+      vpc_security_group_ids:
+      - 
+      allow_major_version_upgrade: 
+      final_snapshot_identifier: 
+      maintenance_window: 
+      backup_retention_period: 
+      backup_window: 
+      multi_az: 
+      auto_minor_version_upgrade: 
+      storage_encrypted: 
+      max_allocated_storage: 
+      tags:
+        Environment: 
+        Organization:  
+
+- aws_db_instance:
+    db_indexd:
+      count: 
+      allocated_storage: 
+      identifier: 
+      storage_type: 
+      engine: 
+      engine_version: 
+      parameter_group_name: 
+      instance_class: 
+      db_name: 
+      username: 
+      password: 
+      snapshot_identifier: 
+      db_subnet_group_name: 
+      vpc_security_group_ids:
+      allow_major_version_upgrade: 
+      final_snapshot_identifier:
+      maintenance_window: 
+      backup_retention_period:
+      backup_window: 
+      multi_az: 
+      auto_minor_version_upgrade: 
+      storage_encrypted: 
+      max_allocated_storage: 
+      tags:
+        Environment: 
+        Organization: 
+
+- aws_db_parameter_group:
+    rds-cdis-pg:
+      name: 
+      family:
+      parameter:
+ 
+- aws_kms_key:
+    kube_key:
+      description: 
+      enable_key_rotation: 
+      tags:
+        Environment:
+        Organization: 
+
+- aws_kms_alias:
+    kube_key:
+      name: 
+      target_key_id: 
+
+- aws_key_pair:
+    automation_dev:
+      key_name: Commons1_automation_dev
+      public_key: 
+
+- aws_iam_policy:
+    configbucket_reader:
+      name: 
+      description: 
+
+locals:
+- pg_family_version: ${replace(var.engine_version, "/\\.[0-9]/", "")}
+
+data:
+- aws_iam_policy_document:
+    configbucket_reader:
+      statement:
+      
