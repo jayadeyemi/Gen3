@@ -1,0 +1,134 @@
+variable:
+- vpc_name: {}
+- vpc_id:
+    default: ''
+- csoc_account_id:
+    default: '433568766270'
+- csoc_managed:
+    default: false
+- ec2_keyname:
+    default: someone@uchicago.edu
+- instance_type:
+    default: t3.large
+- jupyter_instance_type:
+    default: t3.large
+- workflow_instance_type:
+    default: t3.2xlarge
+- peering_cidr:
+    default: 10.128.0.0/20
+- secondary_cidr_block:
+    default: ''
+- peering_vpc_id:
+    default: vpc-e2b51d99
+- users_policy: {}
+- worker_drive_size:
+    default: 30
+- eks_version:
+    default: '1.25'
+- workers_subnet_size:
+    default: 24
+- kernel:
+    default: N/A
+- bootstrap_script:
+    default: bootstrap.sh
+- jupyter_bootstrap_script:
+    default: bootstrap.sh
+- jupyter_worker_drive_size:
+    default: 30
+- workflow_bootstrap_script:
+    default: bootstrap.sh
+- workflow_worker_drive_size:
+    default: 30
+- cidrs_to_route_to_gw:
+    default: []
+- organization_name:
+    default: Basic Services
+- proxy_name:
+    default: ' HTTP Proxy'
+- jupyter_asg_desired_capacity:
+    default: 0
+- jupyter_asg_max_size:
+    default: 10
+- jupyter_asg_min_size:
+    default: 0
+- workflow_asg_desired_capacity:
+    default: 0
+- workflow_asg_max_size:
+    default: 50
+- workflow_asg_min_size:
+    default: 0
+- iam-serviceaccount:
+    default: false
+- oidc_eks_thumbprint:
+    description: Thumbprint for the AWS OIDC identity provider
+    default:
+    - 9e99a48a9960b14926bb7f3b02e22da2b0ab7280
+- availability_zones:
+    description: AZ to be used by EKS nodes
+    default:
+    - us-east-1a
+    - us-east-1c
+    - us-east-1d
+- domain_test:
+    description: Domain for the lambda function to check for the proxy
+    default: www.google.com
+- ha_squid:
+    description: Is HA squid deployed?
+    default: false
+- deploy_workflow:
+    description: Deploy workflow nodepool?
+    default: false
+- secondary_availability_zones:
+    description: AZ to be used by EKS nodes in the secondary subnet
+    default:
+    - us-east-1a
+    - us-east-1b
+    - us-east-1c
+    - us-east-1d
+- deploy_jupyter:
+    description: Deploy workflow nodepool?
+    default: true
+- dual_proxy:
+    description: Single instance and HA
+- single_az_for_jupyter:
+    description: Jupyter notebooks on a single AZ
+    default: false
+- sns_topic_arn:
+    description: SNS topic ARN for alerts
+    default: arn:aws:sns:us-east-1:433568766270:planx-csoc-alerts-topic
+- activation_id:
+    default: ''
+- customer_id:
+    default: ''
+- fips:
+    default: false
+- fips_ami_kms:
+    default: arn:aws:kms:us-east-1:707767160287:key/mrk-697897f040ef45b0aa3cebf38a916f99
+- fips_enabled_ami:
+    default: ami-0de87e3680dcb13ec
+- use_asg:
+    default: true
+- use_karpenter:
+    default: false
+- deploy_karpenter_in_k8s:
+    default: false
+    description: Allows you to enable the Karpenter Helm chart and associated resources
+      without deploying the other parts of karpenter (i.e. the roles, permissions,
+      and SQS queue)
+- karpenter_version:
+    default: v0.32.9
+- spot_linked_role:
+    default: false
+- scale_in_protection:
+    description: set scale-in protection on ASG
+    default: false
+- ci_run:
+    default: false
+- eks_public_access:
+    default: 'true'
+- enable_vpc_endpoints:
+    default: true
+- k8s_bootstrap_resources:
+    default: false
+    description: If set to true, creates resources for bootstrapping a kubernetes
+      cluster (such as karpenter configs and helm releases)
