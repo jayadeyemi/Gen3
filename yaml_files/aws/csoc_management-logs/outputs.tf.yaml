@@ -1,7 +1,0 @@
-output:
-- cloudwatch_log_group:
-    value: ${module.logging.cloudwatch_log_group}
-- s3_bucket:
-    value: ${module.logging.s3_bucket}
-- log_destination:
-    value: ${module.logging.log_destination}
