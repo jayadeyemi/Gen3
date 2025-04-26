@@ -1,0 +1,9 @@
+---
+module:
+  firewall-csoc-private-inbound-qualys-udp:
+    source: ../../../modules/firewall
+    project_id: ${data.terraform_remote_state.org_setup.project_id}
+    name: ${module.vpc-csoc-private.network_name}-inbound-qualys-udp
+    network: ${module.vpc-csoc-private.network_name}
+    protocol: ${var.csoc_private_inbound_qualys_udp_protocol}
+    target_tags: ${var.csoc_private_inbound_qualys_udp_target_tags}

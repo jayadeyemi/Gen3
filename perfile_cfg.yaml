@@ -1,0 +1,23 @@
+aws/modules/aurora/main.yaml:
+  postproc: fix_block_seq
+  indent_mapping: 8
+
+aws/modules/eks/asg.yaml:
+  postproc: fix_block_seq
+  indent_mapping: 4
+
+aws/modules/commons-vpc-es/cloud.yaml:
+  postproc: fix_block_seq
+  indent_mapping: 4
+
+aws/aurora_db/data.yaml:
+  postproc: fix_block_seq
+  indent_mapping: 4
+
+aws/modules/generic-bucket/cloud.yaml:
+  postproc: fix_block_seq
+  indent_mapping: 4
+
+aws/modules/waf/main.yaml:
+  postproc: fix_block_seq
+  indent_mapping: 4

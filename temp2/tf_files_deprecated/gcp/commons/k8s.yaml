@@ -1,0 +1,14 @@
+---
+module:
+  - k8s:
+    source: ../modules/gke
+    gcp_region: ${var.gcp_region}
+    cluster_name: ${var.vpc_name}
+    cluster_index: ${var.cluster_index}
+    vpc_octet2: ${var.vpc_octet2}
+    vpc_octet3: ${var.vpc_octet3}
+    node_subnetwork: ${module.cdis_vpc.subnet_region1_name}
+    vpc_self_link: ${module.cdis_vpc.vpc_self_link}
+    k8s_master_password: ${var.k8s_master_password}
+    k8s_node_service_account: ${var.k8s_node_service_account}
+    admin_box_service_account: ${var.admin_box_service_account}

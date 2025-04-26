@@ -1,0 +1,3 @@
+---
+locals:
+  s3_origin_id: S3-Website-${var.access_url}.s3-website-us-east-1.amazonaws.com

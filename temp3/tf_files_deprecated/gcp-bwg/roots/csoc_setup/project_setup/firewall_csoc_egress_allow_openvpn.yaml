@@ -1,0 +1,14 @@
+---
+module:
+  firewall_csoc_egress_allow_openvpn:
+    source: ../../../modules/firewall-egress
+    priority: '800'
+    project_id: ${data.terraform_remote_state.org_setup.project_id}
+    name: ${module.vpc-csoc-ingress.network_name}-outbound-openvpn
+    network: ${module.vpc-csoc-ingress.network_name}
+    protocol: TCP
+    ports:
+      '1194'
+      '443'
+    target_tags:
+      allow-egress-openvpn

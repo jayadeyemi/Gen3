@@ -1,0 +1,14 @@
+---
+variable:
+  - slack_webhook:
+    default: ''
+  - secondary_slack_webhook:
+    default: ''
+  - ebs_volume_size:
+    default: ''
+  - alarm_threshold:
+    default: '85'
+  - vpc_name:
+    default: ''
+  - es_domain_name:
+    default: ''

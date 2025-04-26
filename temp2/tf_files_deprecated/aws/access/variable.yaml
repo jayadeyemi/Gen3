@@ -1,0 +1,6 @@
+---
+variable:
+  - access_url:
+    default: ''
+  - access_cert:
+    default: ''

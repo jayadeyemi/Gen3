@@ -1,0 +1,8 @@
+---
+variable:
+  - slack_webhook:
+    default: ''
+  - secondary_slack_webhook:
+    default: ''
+  - vpc_name:
+    default: ''

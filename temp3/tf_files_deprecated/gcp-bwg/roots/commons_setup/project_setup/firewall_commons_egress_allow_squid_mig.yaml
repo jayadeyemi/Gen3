@@ -1,0 +1,15 @@
+---
+module:
+  firewall_commons_egress_allow_squid_mig:
+    source: ../../../modules/firewall-egress
+    enable_logging: ${var.egress_allow_proxy_mig_enable_logging}
+    priority: ${var.egress_allow_proxy_mig_priority}
+    project_id: ${data.terraform_remote_state.org_setup.project_id}
+    direction: ${var.egress_allow_proxy_mig_direction}
+    name: ${var.egress_allow_proxy_mig_name}
+    network: ${module.vpc-commons-private.network_name}
+    protocol: ${var.egress_allow_proxy_mig_protocol}
+    destination_ranges:
+      ${var.egress_allow_proxy_mig_destination}
+    target_tags:
+      ${var.egress_allow_proxy_mig_name}

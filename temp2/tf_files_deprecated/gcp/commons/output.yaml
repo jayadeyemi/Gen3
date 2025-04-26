@@ -1,0 +1,16 @@
+---
+output:
+  - k8s_endpoint:
+    value: ${module.k8s.endpoint}
+  - k8s_client_certificate:
+    value: ${module.k8s.client_certificate}
+  - k8s_client_key:
+    value: ${module.k8s.client_key}
+  - k8s_cluster_ca_certificate:
+    value: ${module.k8s.cluster_ca_certificate}
+  - admin_box_id:
+    value: ${module.k8s.admin_box_id}
+  - admin_box_ip:
+    value: ${module.k8s.admin_box_ip}
+  - admin_box_nat_ip:
+    value: ${module.k8s.admin_box_nat_ip}

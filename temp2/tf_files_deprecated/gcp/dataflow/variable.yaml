@@ -1,0 +1,12 @@
+---
+variable:
+  - pubsub_topic_name:
+    description: pubsub topic name
+  - pubsub_sub_name:
+    description: pubsub subscription name
+  - dataflow_name: {}
+  - template_gcs_path: {}
+  - temp_gcs_location: {}
+  - service_account_email: {}
+  - dataflow_zone: {}
+  - project_id: {}

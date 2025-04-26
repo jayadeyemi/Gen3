@@ -1,0 +1,6 @@
+---
+variable:
+  role:
+    description: name of role
+  policy_arn:
+    description: arn of policy to attach to role

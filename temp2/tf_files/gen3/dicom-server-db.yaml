@@ -1,0 +1,11 @@
+---
+module:
+  - dicom-server-db:
+    count: '${var.dicom-server_enabled ? 1 : 0}'
+    source: ../aws/aurora_db
+    vpc_name: ${var.vpc_name}
+    service: dicom-server
+    admin_database_username: ${var.aurora_username}
+    admin_database_password: ${var.aurora_password}
+    namespace: ${var.namespace}
+    secrets_manager_enabled: true

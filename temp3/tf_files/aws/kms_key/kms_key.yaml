@@ -1,0 +1,6 @@
+---
+module:
+  kms_key:
+    source: ../modules/kms-key
+    account_ids: ${var.account_ids}
+    action: ${var.action}

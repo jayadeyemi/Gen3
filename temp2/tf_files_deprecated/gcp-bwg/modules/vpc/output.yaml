@@ -1,0 +1,23 @@
+---
+output:
+  - network_name:
+    value: ${google_compute_network.network.name}
+    description: The name of the VPC being created
+  - network_self_link:
+    value: ${google_compute_network.network.self_link}
+    description: The URI of the VPC being created
+  - network_id:
+    value: ${google_compute_network.network.id}
+  - network_subnetwork:
+    value: ${google_compute_subnetwork.subnetwork.*.name}
+  - network_subnetwork_noalias:
+    value: ${google_compute_subnetwork.subnetworknoalias.*.name}
+  - subnetwork_self_link_noalias:
+    value: ${data.google_compute_subnetwork.created_subnetsnoalias.*.self_link}
+  - subnetwork_self_link:
+    value: ${data.google_compute_subnetwork.created_subnets.*.self_link}
+  - subnetwork_name:
+    value: ${data.google_compute_subnetwork.created_subnets.*.name}
+  - secondary_range_name:
+    value:
+      - ${google_compute_subnetwork.subnetwork.*.secondary_ip_range}

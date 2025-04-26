@@ -1,0 +1,11 @@
+---
+module:
+  - firewall-csoc-private-outbound-proxy:
+    source: ../../../modules/firewall-egress
+    priority: ${var.csoc_private_outbound_proxy_priority}
+    project_id: ${data.terraform_remote_state.org_setup.project_id}
+    name: ${module.vpc-csoc-private.network_name}-outbound-proxy
+    network: ${module.vpc-csoc-private.network_name}
+    protocol: ${var.csoc_private_outbound_proxy_protocol}
+    ports: ${var.csoc_private_outbound_proxy_ports}
+    target_tags: ${var.csoc_private_outbound_proxy_target_tags}

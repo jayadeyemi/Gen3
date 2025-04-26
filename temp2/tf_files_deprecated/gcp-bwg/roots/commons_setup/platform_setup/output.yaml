@@ -1,0 +1,29 @@
+---
+output:
+  - user_password_url:
+    description: The generated id presented in base64, using the URL-friendly character set
+    value: ${module.sql.user_password_url}
+  - user_password_std:
+    description: The generated id presented in base64 without additional transformations.
+    value: ${module.sql.user_password_std}
+  - sql_instance_database_self_link:
+    description: The URI of the created database resource.
+    value:
+      - ${module.sql.sql_instance_database_self_link}
+  - sql_instance_self_link:
+    description: The URI of the created instance resource
+    value: ${module.sql.sql_instance_self_link}
+  - sql_instance_connection_name:
+    value: ${module.sql.sql_instance_connection_name}
+  - service_account_email_address:
+    description: The service account email address assigned to the instance.
+    value: ${module.sql.service_account_email_address}
+  - ip_address_0_ip_address:
+    description: The IPv4 address assigned.
+    value: ${module.sql.ip_address_0_ip_address}
+  - user_name:
+    value: ${module.sql.user_name}
+  - endpoint:
+    value: ${module.commons-gke.endpoint}
+  - master_version:
+    value: ${module.commons-gke.master_version}

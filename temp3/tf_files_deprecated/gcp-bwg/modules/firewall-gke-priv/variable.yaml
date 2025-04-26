@@ -1,0 +1,20 @@
+---
+variable:
+  gke_master_node_address:
+    description: GKE Master Node IP address.
+    type: list
+    default: []
+  project_id:
+    description: The project ID to host the network in
+  network_name:
+    description: The name of the VPC network being created
+  fw_rule_deny_all_egress:
+    description: Deny all egress traffic out of VPC
+  fw_rule_allow_hc_ingress:
+    description: Allow ingress for health checks
+  fw_rule_allow_hc_egress:
+    description: Allow egress to health checks
+  fw_rule_allow_google_apis_egress:
+    description: Allow egress to Google APIs
+  fw_rule_allow_master_node_egress:
+    description: Allow egress to master node subnet

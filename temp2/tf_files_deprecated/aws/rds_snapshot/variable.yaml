@@ -1,0 +1,8 @@
+---
+variable:
+  - aws_region:
+    default: us-east-1
+  - vpc_name: {}
+  - indexd_rds_id: {}
+  - fence_rds_id: {}
+  - sheepdog_rds_id: {}

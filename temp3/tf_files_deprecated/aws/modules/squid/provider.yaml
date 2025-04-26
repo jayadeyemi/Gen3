@@ -1,0 +1,5 @@
+---
+provider:
+  aws:
+    alias: ami-source-region
+    region: ${var.ami_region}

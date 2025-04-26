@@ -1,0 +1,22 @@
+---
+variable:
+  - slack_webhook:
+    default: ''
+  - secondary_slack_webhook:
+    default: ''
+  - db_fence_size:
+    default: '10'
+  - db_indexd_size:
+    default: '10'
+  - db_gdcapi_size:
+    default: '10'
+  - alarm_threshold:
+    default: '85'
+  - vpc_name:
+    default: ''
+  - db_fence:
+    default: ''
+  - db_indexd:
+    default: ''
+  - db_gdcapi:
+    default: ''

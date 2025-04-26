@@ -1,0 +1,21 @@
+---
+module:
+  squid-ilb:
+    source: ../../../modules/loadbalancer-tcp
+    region: ${var.region}
+    project: ${data.terraform_remote_state.org_setup.project_id}
+    network: ${data.terraform_remote_state.project_setup.network_name_commons_private}
+    subnetwork: ${data.terraform_remote_state.project_setup.subnetwork_name__commons_private.0}
+    name: ${var.squid_lb_name}
+    ports:
+      ${var.squid_hc_tcp_health_check_port}
+    health_port: ${var.squid_hc_tcp_health_check_port}
+    target_tags: ${var.inbound_proxy_port_name}
+    session_affinity: ${var.squid_lb_session_affinity}
+    load_balancing_scheme: ${var.squid_lb_load_balancing_scheme}
+    protocol: ${var.squid_fw_protocol}
+    ip_address: ${var.squid_lb_ip_address}
+    ip_protocol: ${var.squid_lb_ip_protocol}
+    http_health_check: ${var.squid_lb_http_health_check}
+    backends:
+      group: ${module.squid_instance_group.instance_group}

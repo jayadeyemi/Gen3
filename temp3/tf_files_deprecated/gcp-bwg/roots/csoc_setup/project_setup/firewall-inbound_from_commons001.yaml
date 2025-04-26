@@ -1,0 +1,17 @@
+---
+module:
+  firewall-inbound_from_commons001:
+    source: ../../../modules/firewall-ingress
+    enable_logging: ${var.csoc_ingress_enable_logging}
+    priority: ${var.csoc_ingress_priority}
+    project_id: ${data.terraform_remote_state.org_setup.project_id}
+    direction: INGRESS
+    name: ${var.inbound_from_commons001_name}
+    network: ${module.vpc-csoc-private.network_name}
+    protocol: ${var.inbound_from_commons001_protocol}
+    ports:
+      ${var.inbound_from_commons001_ports}
+    source_ranges:
+      ${var.inbound_from_commons001_source_ranges}
+    target_tags:
+      ${var.inbound_from_commons001_target_tags}

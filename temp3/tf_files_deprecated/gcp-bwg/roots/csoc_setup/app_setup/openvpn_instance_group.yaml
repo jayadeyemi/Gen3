@@ -1,0 +1,30 @@
+---
+module:
+  openvpn_instance_group:
+    source: ../../../modules/compute-group
+    name: ${var.openvpn_name}
+    project: ${data.terraform_remote_state.org_setup.project_id}
+    network_interface: ${data.terraform_remote_state.project_setup.network_name_csoc_ingress}
+    subnetwork: ${data.terraform_remote_state.project_setup.network_subnetwork_csoc_ingress.0}
+    tags:
+      ${data.terraform_remote_state.project_setup.firewall-csoc-ingress-inbound-openvpn-target-tags}
+      ${data.terraform_remote_state.project_setup.firewall-csoc-ingress-outbound-proxy-target-tags}
+      ${data.terraform_remote_state.project_setup.firewall_csoc_egress_allow_openvpn-target-tags}
+      ${data.terraform_remote_state.project_setup.firewall_csoc_ingress_outbound_ssh_target_tags}
+    metadata_startup_script: ${var.openvpn_metadata_startup_script}
+    machine_type: ${var.openvpn_machine_type}
+    base_instance_name: ${var.openvpn_base_instance_name}
+    zone: ${var.openvpn_zone}
+    region: ${var.region}
+    target_size: ${var.openvpn_target_size}
+    target_pool_name:
+      ${module.openvpn-elb.target_pool}
+    source_image: ${var.openvpn_source_image}
+    instance_template_name: ${var.openvpn_instance_template_name}
+    instance_group_manager_name: ${var.openvpn_instance_group_manager_name}
+    automatic_restart: ${var.openvpn_automatic_restart}
+    on_host_maintenance: ${var.openvpn_on_host_maintenance}
+    labels: ${var.openvpn_labels}
+    access_config: ${var.openvpn_access_config}
+    network_ip: ${var.openvpn_network_ip}
+    can_ip_forward: ${var.openvpn_can_ip_forward}

@@ -1,0 +1,11 @@
+---
+module:
+  - vpc-peering-commons_private_to_csoc_private:
+    source: ../../../modules/vpc-peering
+    peer1_name: ${data.terraform_remote_state.csoc_project_setup.network_name_csoc_private}-${module.vpc-commons-private.network_name}
+    peer2_name: ${module.vpc-commons-private.network_name}-${data.terraform_remote_state.csoc_project_setup.network_name_csoc_private}
+    peer1_root_self_link: ${data.terraform_remote_state.csoc_project_setup.network_self_link_csoc_private}
+    peer1_add_self_link: ${module.vpc-commons-private.network_self_link}
+    peer2_root_self_link: ${module.vpc-commons-private.network_self_link}
+    peer2_add_self_link: ${data.terraform_remote_state.csoc_project_setup.network_self_link_csoc_private}
+    auto_create_routes: ${var.peer_auto_create_routes}

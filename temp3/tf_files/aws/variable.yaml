@@ -1,0 +1,13 @@
+---
+variable:
+  api_key: {}
+  app_key: {}
+  api_url: {}
+  commons_url: {}
+  commons_name: {}
+  project_slack_channel: {}
+  test_definitions: {}
+  locations: {}
+  tags: {}
+  status: {}
+  test_run_frequency_secs: {}

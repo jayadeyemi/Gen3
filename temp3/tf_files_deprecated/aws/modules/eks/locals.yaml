@@ -1,0 +1,7 @@
+---
+locals:
+  azs: '${split(",", length(var.availability_zones) != 0 ? join(",", var.availability_zones) : join(",", data.aws_availability_zones.available.names))}'
+  secondary_azs: '${split(",", length(var.secondary_availability_zones) != 0 ? join(",", var.secondary_availability_zones) : join(",", data.aws_availability_zones.available.names))}'
+  ami: '${var.fips ? var.fips_enabled_ami : data.aws_ami.eks_worker.id}'
+  eks_priv_subnets: '${split(",", var.secondary_cidr_block != "" ? join(",", aws_subnet.eks_secondary_subnet.*.id) : join(",", aws_subnet.eks_private.*.id))}'
+  config-map-aws-auth: "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: aws-auth\n  namespace: kube-system\ndata:\n  mapRoles: |\n    - rolearn: ${aws_iam_role.eks_node_role.arn}\n      username: system:node:{{EC2PrivateDNSName}}\n      groups:\n        - system:bootstrappers\n        - system:nodes\n    - rolearn: ${module.jupyter_pool.nodepool_role}\n      username: system:node:{{EC2PrivateDNSName}}\n      groups:\n        - system:bootstrappers\n        - system:nodes\n    - rolearn: ${module.workflow_pool.nodepool_role}\n      username: system:node:{{EC2PrivateDNSName}}\n      groups:\n        - system:bootstrappers\n        - system:nodes"

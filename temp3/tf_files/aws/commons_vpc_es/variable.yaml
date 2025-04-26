@@ -1,0 +1,24 @@
+---
+variable:
+  vpc_name: {}
+  vpc_id:
+    default: ''
+  instance_type:
+    default: m4.large.elasticsearch
+  ebs_volume_size_gb:
+    default: 20
+  encryption:
+    default: 'true'
+  instance_count:
+    default: 3
+  organization_name:
+    description: For tagging purposes
+    default: Basic Service
+  es_version:
+    description: What version to use when deploying ES
+    default: '6.8'
+  es_linked_role:
+    description: Whether or no to deploy a linked roll for ES
+    default: true
+  deploy_es:
+    default: true

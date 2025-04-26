@@ -1,0 +1,32 @@
+---
+module:
+  - firewall-inbound-commons:
+    source: ../../../modules/firewall-ingress
+    enable_logging: ${var.commons_ingress_enable_logging}
+    priority: ${var.commons_ingress_priority}
+    project_id: ${data.terraform_remote_state.org_setup.project_id}
+    direction: INGRESS
+    name: commons-inbound-ssh
+    network: ${module.vpc-commons-private.network_name}
+    protocol: ${var.commons_ingress_protocol}
+    ports:
+      - ${var.commons_ingress_ports}
+    source_ranges:
+      - ${var.commons_ingress_source_ranges}
+    target_tags:
+      - ${var.commons_ingress_target_tags}
+  - firewall-inbound-commons:
+    source: ../../../modules/firewall-ingress
+    enable_logging: ${var.inbound_to_commons_enable_logging}
+    priority: ${var.inbound_to_commons_priority}
+    project_id: ${data.terraform_remote_state.org_setup.project_id}
+    direction: INGRESS
+    name: ${var.inbound_to_commons_name}
+    network: ${module.vpc-commons-private.network_name}
+    protocol: ${var.inbound_to_commons_protocol}
+    ports:
+      - ${var.inbound_to_commons_ports}
+    source_ranges:
+      - ${var.inbound_to_commons_source_ranges}
+    target_tags:
+      - ${var.inbound_to_commons_target_tags}

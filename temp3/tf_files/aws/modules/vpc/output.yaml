@@ -1,0 +1,40 @@
+---
+output:
+  zone_zid:
+    value: ${aws_route53_zone.main.zone_id}
+  zone_id:
+    value: ${aws_route53_zone.main.id}
+  zone_name:
+    value: ${aws_route53_zone.main.name}
+  vpc_id:
+    value: ${aws_vpc.main.id}
+  vpc_cidr_block:
+    value: ${aws_vpc.main.cidr_block}
+  public_route_table_id:
+    value: ${aws_route_table.public.id}
+  gateway_id:
+    value: ${aws_internet_gateway.gw.id}
+  public_subnet_id:
+    value: ${aws_subnet.public.id}
+  security_group_local_id:
+    value: ${aws_security_group.local.id}
+  nat_gw_id:
+    value: ${aws_nat_gateway.nat_gw.id}
+  ssh_key_name:
+    value: ${var.ssh_key_name}
+  vpc_peering_id:
+    value: ${aws_vpc_peering_connection.vpcpeering.id}
+  es_user_key:
+    value: ${aws_iam_access_key.es_user_key.secret}
+  es_user_key_id:
+    value: ${aws_iam_access_key.es_user_key.id}
+  cwlogs:
+    value: ${aws_cloudwatch_log_group.main_log_group.arn}
+  fence-bot_id:
+    value: ${module.fence-bot-user.fence-bot_id}
+  fence-bot_secret:
+    value: ${module.fence-bot-user.fence-bot_secret}
+  data-bucket_name:
+    value: ${module.data-bucket.data-bucket_name}
+  squid_auto:
+    value: ${module.squid-auto.squid_auto-name}

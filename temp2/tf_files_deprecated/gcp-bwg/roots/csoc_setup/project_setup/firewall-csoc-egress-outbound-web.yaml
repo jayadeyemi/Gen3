@@ -1,0 +1,11 @@
+---
+module:
+  - firewall-csoc-egress-outbound-web:
+    source: ../../../modules/firewall-egress
+    priority: ${var.csoc_egress_outbound_priority}
+    project_id: ${data.terraform_remote_state.org_setup.project_id}
+    name: ${module.vpc-csoc-egress.network_name}
+    network: ${module.vpc-csoc-egress.network_name}
+    protocol: ${var.csoc_egress_outbound_protocol}
+    ports: ${var.csoc_egress_outbound_ports}
+    target_tags: ${var.csoc_egress_outbound_target_tags}

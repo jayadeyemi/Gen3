@@ -1,0 +1,2 @@
+---
+network: ${var.network_name}

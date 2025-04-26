@@ -1,0 +1,17 @@
+---
+module:
+  firewall-outbound-commons:
+    source: ../../../modules/firewall-egress
+    enable_logging: ${var.commons_egress_enable_logging}
+    priority: ${var.commons_egress_priority}
+    project_id: ${data.terraform_remote_state.org_setup.project_id}
+    direction: EGRESS
+    name: commons-outbound-http
+    network: ${module.vpc-commons-private.network_name}
+    protocol: ${var.commons_egress_protocol}
+    ports:
+      ${var.commons_egress_ports}
+    destination_ranges:
+      ${var.commons_egress_destination_ranges}
+    target_tags:
+      ${var.commons_egress_target_tags}

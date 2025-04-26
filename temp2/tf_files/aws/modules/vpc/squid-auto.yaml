@@ -1,0 +1,33 @@
+---
+module:
+  - squid-auto:
+    source: ../squid_auto
+    peering_cidr: ${var.peering_cidr}
+    secondary_cidr_block: ${var.secondary_cidr_block}
+    env_vpc_name: ${var.vpc_name}
+    env_vpc_cidr: ${aws_vpc.main.cidr_block}
+    env_vpc_id: ${aws_vpc.main.id}
+    env_log_group: ${aws_cloudwatch_log_group.main_log_group.name}
+    env_squid_name: squid-auto-${var.vpc_name}
+    squid_proxy_subnet: '${var.network_expansion ? cidrsubnet(var.vpc_cidr_block, 5, 3) : cidrsubnet(var.vpc_cidr_block, 4, 1)}'
+    organization_name: ${var.organization_name}
+    ssh_key_name: ${var.ssh_key_name}
+    ami_account_id: ${var.ami_account_id}
+    image_name_search_criteria: ${var.squid_image_search_criteria}
+    squid_instance_drive_size: ${var.squid_instance_drive_size}
+    squid_availability_zones: ${var.availability_zones}
+    main_public_route: ${aws_route_table.public.id}
+    route_53_zone_id: ${aws_route53_zone.main.id}
+    squid_instance_type: ${var.squid_instance_type}
+    bootstrap_script: ${var.squid_bootstrap_script}
+    extra_vars: ${var.squid_extra_vars}
+    branch: ${var.branch}
+    cluster_max_size: ${var.squid_cluster_max_size}
+    cluster_min_size: ${var.squid_cluster_min_size}
+    cluster_desired_capasity: ${var.squid_cluster_desired_capasity}
+    network_expansion: ${var.network_expansion}
+    squid_depends_on: ${aws_nat_gateway.nat_gw.id}
+    activation_id: ${var.activation_id}
+    customer_id: ${var.customer_id}
+    slack_webhook: ${var.slack_webhook}
+    fips: ${var.fips}

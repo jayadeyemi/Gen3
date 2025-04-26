@@ -1,0 +1,8 @@
+---
+module:
+  org_data_access:
+    source: ../../../modules/stackdriver/org_sink
+    name: ${var.data_access_sink_name}
+    org_id: ${var.org_id}
+    destination: ${module.data_access_storage.bucket_name}
+    filter: ${var.data_access_filter}

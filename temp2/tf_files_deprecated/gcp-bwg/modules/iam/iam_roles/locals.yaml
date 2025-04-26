@@ -1,0 +1,3 @@
+---
+locals:
+  - compute_instance_viewer_folder_binding: ${var.compute_instance_viewer_folder_binding}
