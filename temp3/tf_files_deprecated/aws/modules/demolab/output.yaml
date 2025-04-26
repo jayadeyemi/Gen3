@@ -1,7 +1,0 @@
----
-output:
-  vpc_id:
-    value: ${module.vpc.vpc_id}
-  iplist:
-    value:
-      ${aws_eip.ips.*.public_ip}

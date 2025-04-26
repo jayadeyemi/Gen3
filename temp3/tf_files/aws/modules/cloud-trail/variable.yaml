@@ -1,7 +1,0 @@
----
-variable:
-  vpc_name: {}
-  environment: {}
-  cloudwatchlogs_group: {}
-  bucket_arn: {}
-  bucket_id: {}

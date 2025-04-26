@@ -1,4 +1,0 @@
----
-locals:
-  - pg_family_version: ${replace( var.indexd_engine_version ,"/\.[0-9]/", "" )}
-  - cluster_name: ${replace(var.vpc_name, "-", "")}

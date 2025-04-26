@@ -1,7 +1,0 @@
----
-module:
-  - fence-bot-user:
-    source: ../fence-bot-user
-    vpc_name: ${var.vpc_name}
-    bucket_name: ${module.data-bucket.data-bucket_name}
-    bucket_access_arns: ${var.fence-bot_bucket_access_arns}

@@ -1,6 +1,0 @@
----
-module:
-  - set_iam_externalIPaccess:
-    source: ../../../modules/org/externalIPaccess
-    org_id_org_externalIP: ${data.google_organization.org.id}
-    org_iam_externalipaccess: ${var.org_iam_externalipaccess}

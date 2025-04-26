@@ -129,7 +129,7 @@ def main(start_path, destination_path):
         # debug_print(f"DEBUG: Derived base_name: {base_name}")
 
         dest_subfolder = os.path.join(destination_path, base_name)
-        if base_name not in ['locals', 'output', 'resource', 'terraform', 'variables']:
+        if base_name not in ['locals', 'output', 'resource', 'terraform', 'variable']:
             os.makedirs(dest_subfolder, exist_ok=True)
         # debug_print(f"DEBUG: Created dest_subfolder: {dest_subfolder}")
 

@@ -1,3 +1,0 @@
----
-locals:
-  - oidc_url: ${replace(var.oidc_provider_url, "https://", "")}

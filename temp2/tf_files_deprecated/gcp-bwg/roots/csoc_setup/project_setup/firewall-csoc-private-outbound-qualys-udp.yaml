@@ -1,9 +1,0 @@
----
-module:
-  - firewall-csoc-private-outbound-qualys-udp:
-    source: ../../../modules/firewall-egress
-    project_id: ${data.terraform_remote_state.org_setup.project_id}
-    name: ${module.vpc-csoc-private.network_name}-outbound-qualys-udp
-    network: ${module.vpc-csoc-private.network_name}
-    protocol: ${var.csoc_private_outbound_qualys_udp_protocol}
-    target_tags: ${var.csoc_private_outbound_qualys_udp_target_tags}

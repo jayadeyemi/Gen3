@@ -1,9 +1,0 @@
----
-module:
-  iam_policy:
-    count: '${var.ha_squid ? 1 : 0}'
-    source: ../iam-policy
-    policy_name: ${var.vpc_name}-gw-checks-lambda-cwlg
-    policy_path: /
-    policy_description: IAM policy for ${var.vpc_name}-gw-checks-lambda to access CWLG
-    policy_json: "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Sid\": \"\",\n      \"Effect\": \"Allow\",\n      \"Action\": [\n        \"logs:CreateLogGroup\",\n        \"logs:CreateLogStream\",\n        \"logs:PutLogEvents\"\n      ],\n      \"Resource\": \"arn:aws:logs:*:*:*\"\n    }\n  ]\n}"

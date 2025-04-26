@@ -1,7 +1,0 @@
----
-variable:
-  vpc_name: {}
-  environment: {}
-  cloudwatchlogs_group: {}
-  deploy_cloud_trail:
-    default: true

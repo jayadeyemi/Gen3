@@ -1,5 +1,0 @@
----
-locals:
-  - snapshot_date: ${formatdate("MM-DD-YYYY", timestamp())}
-  snapshot_identifier: ${var.vpc_name}-${var.cluster_instance_identifier}-reencrypt-${local.snapshot_date}
-  master_password: '${var.master_password != "" ? var.master_password : random_password.password.result}'

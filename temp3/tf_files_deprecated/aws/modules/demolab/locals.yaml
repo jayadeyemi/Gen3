@@ -1,3 +1,0 @@
----
-locals:
-  environment: lab_${var.vpc_name}
