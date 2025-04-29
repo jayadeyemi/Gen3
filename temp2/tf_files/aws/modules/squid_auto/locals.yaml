@@ -1,0 +1,4 @@
+---
+locals:
+  - cidrs: "${var.secondary_cidr_block != \"\" ? ['${var.env_vpc_cidr}', '${var.peering_cidr}', '${var.secondary_cidr_block}'] : ['${var.env_vpc_cidr}', '${var.peering_cidr}']}"
+  cidrs2: "${var.secondary_cidr_block != \"\" ? ['${var.env_vpc_cidr}', '${var.secondary_cidr_block}'] : ['${var.env_vpc_cidr}']}"

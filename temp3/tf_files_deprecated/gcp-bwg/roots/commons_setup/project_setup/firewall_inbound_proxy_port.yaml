@@ -1,0 +1,17 @@
+---
+module:
+  firewall_inbound_proxy_port:
+    source: ../../../modules/firewall-ingress
+    enable_logging: true
+    priority: ${var.inbound_proxy_port_priority}
+    project_id: ${data.terraform_remote_state.org_setup.project_id}
+    direction: INGRESS
+    name: ${var.inbound_proxy_port_name}
+    network: ${module.vpc-commons-private.network_name}
+    protocol: ${var.inbound_proxy_port_protocl}
+    ports:
+      ${var.inbound_proxy_port_ports}
+    source_ranges:
+      ${var.commons_private_subnet_ip}
+    target_tags:
+      ${var.inbound_proxy_port_name}

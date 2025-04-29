@@ -1,0 +1,10 @@
+---
+data:
+  - google_compute_network:
+    network:
+      project: ${var.project}
+      name: ${var.network_interface}
+  - google_compute_subnetwork:
+    subnetwork:
+      project: ${var.project}
+      name: ${var.subnetwork}

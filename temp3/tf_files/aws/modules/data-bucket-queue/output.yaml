@@ -1,0 +1,8 @@
+---
+output:
+  data-bucket_name:
+    value: ${aws_sns_topic.user_updates.arn}
+  sns-topic-arn:
+    value: ${aws_sns_topic.user_updates.arn}
+  sqs-url:
+    value: ${aws_sqs_queue.user_updates_queue.id}

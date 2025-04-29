@@ -1,0 +1,12 @@
+---
+module:
+  - openvpn_create_autoscaler:
+    source: ../../../modules/autoscaler
+    project: ${data.terraform_remote_state.org_setup.project_id}
+    name: ${var.openvpn_name}-autoscaler
+    target_instance_group: ${module.openvpn_instance_group.instance_group_manager_self_link}
+    zone: ${var.openvpn_zone}
+    min_replicas: ${var.openvpn_min_replicas}
+    max_replicas: ${var.openvpn_max_replicas}
+    cpu_utilization_target: ${var.openvpn_cpu_utilization_target}
+    cooldown_period: ${var.openvpn_cooldown_period}

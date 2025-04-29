@@ -1,0 +1,116 @@
+---
+resource:
+  helm_release:
+    karpenter:
+      namespace: karpenter
+      create_namespace: true
+      name: karpenter
+      repository: oci://public.ecr.aws/karpenter
+      repository_username: ${data.aws_ecrpublic_authorization_token.token.user_name}
+      repository_password: ${data.aws_ecrpublic_authorization_token.token.password}
+      chart: karpenter
+      version: v0.27.0
+      set:
+        name: settings.aws.clusterName
+        value: ${module.eks.cluster_name}
+        name: settings.aws.clusterEndpoint
+        value: ${module.eks.cluster_endpoint}
+        name: serviceAccount.annotations.eks\.amazonaws\.com/role-arn
+        value: ${module.karpenter.irsa_arn}
+        name: settings.aws.defaultInstanceProfile
+        value: ${module.karpenter.instance_profile_name}
+        name: settings.aws.interruptionQueueName
+        value: ${module.karpenter.queue_name}
+  kubectl_manifest:
+    karpenter_provisioner:
+      yaml_body: "apiVersion: karpenter.sh/v1alpha5\nkind: Provisioner\nmetadata:\n  name: default\nspec:\n  requirements:\n    - key: karpenter.sh/capacity-type\n      operator: In\n      values: [\"spot\"]\n  limits:\n    resources:\n      cpu: 1000\n  providerRef:\n    name: default\n  ttlSecondsAfterEmpty: 30"
+      depends_on:
+        ${helm_release.karpenter}
+  kubectl_manifest:
+    karpenter_node_template:
+      yaml_body: "apiVersion: karpenter.k8s.aws/v1alpha1\nkind: AWSNodeTemplate\nmetadata:\n  name: default\nspec:\n  subnetSelector:\n    karpenter.sh/discovery: ${module.eks.cluster_name}\n  securityGroupSelector:\n    karpenter.sh/discovery: ${module.eks.cluster_name}\n  tags:\n    karpenter.sh/discovery: ${module.eks.cluster_name}"
+      depends_on:
+        ${helm_release.karpenter}
+  kubectl_manifest:
+    karpenter_example_deployment:
+      yaml_body: "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: inflate\nspec:\n  replicas: 0\n  selector:\n    matchLabels:\n      app: inflate\n  template:\n    metadata:\n      labels:\n        app: inflate\n    spec:\n      terminationGracePeriodSeconds: 0\n      containers:\n        - name: inflate\n          image: public.ecr.aws/eks-distro/kubernetes/pause:3.7\n          resources:\n            requests:\n              cpu: 1"
+      depends_on:
+        ${helm_release.karpenter}
+  aws_db_subnet_group:
+    database:
+      name: ${var.vpc_name}-subnet-group
+      description: Database subnet group for ${var.vpc_name}
+      subnet_ids:
+        ${module.vpc.database_subnets[0]}
+        ${module.vpc.intra_subnets[0]}
+        ${module.vpc.intra_subnets[1]}
+      tags: ${local.tags}
+  aws_iam_user:
+    es_user:
+      name: ${var.vpc_name}_es_user
+      tags:
+        Environment: ${var.vpc_name}
+        Organization: Basic Services
+  aws_iam_access_key:
+    es_user_key:
+      user: ${aws_iam_user.es_user.name}
+  aws_cloudwatch_log_group:
+    main_log_group:
+      name: ${var.vpc_name}
+      retention_in_days: '1827'
+      tags:
+        Environment: ${var.vpc_name}
+        Organization: Basic Services
+  random_password:
+    master:
+      length: 20
+      special: false
+  null_resource:
+    kubeconfig:
+      provisioner:
+        local-exec:
+          command: aws eks update-kubeconfig --name ${module.eks.cluster_name} --region ${var.region}
+      depends_on:
+        ${module.eks}
+  aws_iam_role:
+    aws_load_balancer_controller:
+      name: ${var.vpc_name}-aws-load-balancer-controller
+      assume_role_policy: ${data.aws_iam_policy_document.alb_ingress_controller_assume_role.json}
+  aws_iam_role_policy_attachment:
+    aws_load_balancer_controller:
+      role: ${aws_iam_role.aws_load_balancer_controller.name}
+      policy_arn: ${aws_iam_policy.aws_load_balancer_controller.arn}
+  aws_iam_policy:
+    aws_load_balancer_controller:
+      name: ${var.vpc_name}-aws-load-balancer-controller-policy
+      description: Policy for AWS Load Balancer Controller
+      policy: ${data.aws_iam_policy_document.aws_load_balancer_controller.json}
+  null_resource:
+    aws_load_balancer_controller:
+      provisioner:
+        local-exec:
+          command: kubectl apply -k "github.com/aws/eks-charts/stable/aws-load-balancer-controller/crds?ref=master" && kubectl create sa aws-load-balancer-controller -n kube-system && kubectl annotate sa -n kube-system aws-load-balancer-controller eks.amazonaws.com/role-arn=${aws_iam_role.aws_load_balancer_controller.arn}
+      depends_on:
+        ${module.eks}
+        ${aws_iam_role.aws_load_balancer_controller}
+  helm_release:
+    aws_load_balancer_controller:
+      name: aws-load-balancer-controller
+      repository: https://aws.github.io/eks-charts
+      chart: aws-load-balancer-controller
+      namespace: kube-system
+      version: 1.5.2
+      set:
+        name: clusterName
+        value: ${module.eks.cluster_name}
+        name: region
+        value: ${var.region}
+        name: vpcId
+        value: ${module.vpc.vpc_id}
+        name: serviceAccount.create
+        value: 'false'
+        name: serviceAccount.name
+        value: aws-load-balancer-controller
+      depends_on:
+        ${module.eks}
+        ${null_resource.aws_load_balancer_controller}

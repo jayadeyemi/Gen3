@@ -1,0 +1,6 @@
+---
+variable:
+  vpc_name: {}
+  vpc_octet2: {}
+  vpc_octet3: {}
+  gcp_region: {}

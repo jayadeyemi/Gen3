@@ -1,0 +1,7 @@
+---
+data:
+  - google_compute_network:
+    network:
+      provider: google-beta
+      project: ${var.project_id}
+      name: ${var.network}

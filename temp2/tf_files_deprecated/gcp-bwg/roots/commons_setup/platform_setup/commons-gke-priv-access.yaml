@@ -1,0 +1,13 @@
+---
+module:
+  - commons-gke-priv-access:
+    source: ../../../modules/firewall-gke-priv
+    project_id: ${data.terraform_remote_state.org_setup.project_id}
+    network_name: ${data.terraform_remote_state.project_setup.network_name_commons_private}
+    fw_rule_deny_all_egress: ${var.fw_rule_deny_all_egress}
+    fw_rule_allow_hc_ingress: ${var.fw_rule_allow_hc_ingress}
+    fw_rule_allow_hc_egress: ${var.fw_rule_allow_hc_egress}
+    fw_rule_allow_google_apis_egress: ${var.fw_rule_allow_google_apis_egress}
+    fw_rule_allow_master_node_egress: ${var.fw_rule_allow_master_node_egress}
+    gke_master_node_address:
+      - ${var.master_ipv4_cidr_block}

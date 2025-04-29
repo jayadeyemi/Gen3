@@ -1,0 +1,8 @@
+---
+module:
+  cloudwatch-events:
+    source: ../cloudwatch-events/
+    cwe_rule_name: ${var.account_name}-cloudtrail-StopLogging
+    cwe_rule_description: Lets check if someone dares to stop logging
+    cwe_target_arn: ${element(module.alerting-lambda.function_arn, 0)}
+    cwe_rule_pattern: "{\n  \"source\": [\n    \"aws.cloudtrail\"\n  ],\n  \"detail\": {\n    \"eventName\": [\n      \"StopLogging\"\n    ]\n  }\n}"

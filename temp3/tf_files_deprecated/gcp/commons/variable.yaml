@@ -1,0 +1,24 @@
+---
+variable:
+  vpc_name: {}
+  hostname: {}
+  vpc_octet2: {}
+  vpc_octet3: {}
+  gcp_region:
+    default: us-central1
+  gdcapi_secret_key: {}
+  gdcapi_indexd_password: {}
+  cluster_index:
+    default: 0
+  k8s_master_password: {}
+  k8s_node_service_account: {}
+  admin_box_service_account: {}
+  db_fence_password: {}
+  db_sheepdog_password: {}
+  db_peregrine_password: {}
+  db_indexd_password: {}
+  google_client_id: {}
+  google_client_secret: {}
+  dictionary_url: {}
+  portal_app: {}
+  config_folder: {}

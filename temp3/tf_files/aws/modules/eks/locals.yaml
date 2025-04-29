@@ -1,0 +1,50 @@
+---
+locals:
+  azs: '${var.availability_zones != 0 ? var.availability_zones : data.aws_availability_zones.available.names}'
+  secondary_azs: '${var.secondary_availability_zones != 0 ? var.secondary_availability_zones : data.aws_availability_zones.available.names}'
+  ami: '${var.fips ? var.fips_enabled_ami : data.aws_ami.eks_worker.id}'
+  eks_priv_subnets: '${var.secondary_cidr_block != "" ? aws_subnet.eks_secondary_subnet.*.id : aws_subnet.eks_private.*.id}'
+  vpc_id: '${var.vpc_id != "" ? var.vpc_id : data.aws_vpc.the_vpc.id}'
+  config-map-aws-auth: "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: aws-auth\n  namespace: kube-system\ndata:\n  mapRoles: |\n    - rolearn: ${aws_iam_role.eks_node_role.arn}\n      username: system:node:{{EC2PrivateDNSName}}\n      groups:\n        - system:bootstrappers\n        - system:nodes\n    - rolearn: ${aws_iam_role.karpenter[0].arn} \n      username: system:node:{{SessionName}}\n      groups:\n        - system:bootstrappers\n        - system:nodes\n        - system:node-proxier\n    - rolearn: ${var.deploy_workflow ? module.workflow_pool[0].nodepool_role : \"\"}\n      username: system:node:{{EC2PrivateDNSName}}\n      groups:\n        - system:bootstrappers\n        - system:nodes\n    - rolearn: ${var.deploy_jupyter ? module.jupyter_pool[0].nodepool_role : \"\"}\n      username: system:node:{{EC2PrivateDNSName}}\n      groups:\n        - system:bootstrappers\n        - system:nodes"
+  account_id: ${data.aws_caller_identity.current.account_id}
+  create_irsa: true
+  irsa_name: ${var.vpc_name}-karpenter-sa
+  irsa_policy_name: ${local.irsa_name}
+  irsa_oidc_provider_url: ${replace(aws_eks_cluster.eks_cluster.identity[0].oidc[0].issuer, "https://", "")}
+  irsa_tag_values:
+    ${aws_eks_cluster.eks_cluster.id}
+  enable_spot_termination: true
+  queue_name: ${var.vpc_name}-${aws_eks_cluster.eks_cluster.id}
+  events:
+    health_event:
+      name: HealthEvent
+      description: Karpenter interrupt - AWS health event
+      event_pattern:
+        source:
+          aws.health
+        detail-type:
+          AWS Health Event
+    spot_interupt:
+      name: SpotInterrupt
+      description: Karpenter interrupt - EC2 spot instance interruption warning
+      event_pattern:
+        source:
+          aws.ec2
+        detail-type:
+          EC2 Spot Instance Interruption Warning
+    instance_rebalance:
+      name: InstanceRebalance
+      description: Karpenter interrupt - EC2 instance rebalance recommendation
+      event_pattern:
+        source:
+          aws.ec2
+        detail-type:
+          EC2 Instance Rebalance Recommendation
+    instance_state_change:
+      name: InstanceStateChange
+      description: Karpenter interrupt - EC2 instance state-change notification
+      event_pattern:
+        source:
+          aws.ec2
+        detail-type:
+          EC2 Instance State-change Notification

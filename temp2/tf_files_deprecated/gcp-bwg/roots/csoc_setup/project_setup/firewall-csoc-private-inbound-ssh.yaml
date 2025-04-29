@@ -1,0 +1,10 @@
+---
+module:
+  - firewall-csoc-private-inbound-ssh:
+    source: ../../../modules/firewall
+    project_id: ${data.terraform_remote_state.org_setup.project_id}
+    name: ${module.vpc-csoc-private.network_name}-inbound-ssh
+    network: ${module.vpc-csoc-private.network_name}
+    protocol: ${var.csoc_private_inbound_ssh_protocol}
+    ports: ${var.csoc_private_inbound_ssh_ports}
+    target_tags: ${var.csoc_private_inbound_ssh_target_tags}

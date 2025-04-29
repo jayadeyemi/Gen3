@@ -8,9 +8,14 @@ Orchestrate your Terraform→YAML pipeline:
   3) tf2yaml.py        (convert .tf → .yaml)
   4) post-proc.py      (strip leading '- ', etc.)
   5) traverser.py      (final layout/export)
+  6) combine.py        (merge YAML outputs)
+  7) (optional) cleaner.py (cleanup temp files)
 
-Usage (no args): adjusts built-in config.
-   With --work-dir: copies 'origin' into that folder first, then processes there.
+Usage:
+   driver.py [--work-dir WORK_DIR] [--clean]
+
+  --work-dir: copy 'origin' into this folder first
+  --clean:    append the cleaner.py step with CLEANUP_PATHS
 """
 import os
 import sys
@@ -18,52 +23,43 @@ import shutil
 import argparse
 import subprocess
 import logging
-import tempfile
 
 # --------------------
 # Configuration
 # --------------------
 origin = "gen3-terraform"       # Your original Terraform directory
 temps = ["temp1", "temp2", "temp3"]
-final = "temp4"                  # Final output folder
+final = "yaml_dir"                  # Final intermediate output folder
 script_dir = "scripts"          # Where your helper .py scripts live
 
-# If you only want to post-process specific YAML files (relative to temp2), list them:
+# Paths to clean when --clean is specified
 CLEANUP_PATHS = temps
-CLEANUP_FILES = ["kubernete.tf"]
+COMBINED_FOLDER = "yaml_combined"  # Final output folder for combined YAML
 
 # --------------------
-# Build the sequence
+# Build the base sequence
 # --------------------
-#  1) tf_organiser.py  : (source_dir, dest_dir)
-#  2) cleaner.py       : (one or more relative paths to remove)
-#  3) tf2yaml.py       : (source_dir, dest_dir, --auto, --no-notebook)
-#  4) post-proc.py     : (source_dir, dest_dir, [optional file list...])
-#  5) traverser.py     : (source_dir, final_dir)
-#  6) cleaner.py       : (list of folders to delete)
-# --------------------
-
-# Prepend temp[0] to each cleanup path:
-cleanup_files = [os.path.join(temps[0], p) for p in CLEANUP_FILES]
-
-
-
 scripts = [
-    # (os.path.join(script_dir, 'tf_organiser.py'), [origin, temps[0]]),
-    # (os.path.join(script_dir, 'cleaner.py')     ,  cleanup_files),
-    # (os.path.join(script_dir, 'tf2yaml.py')     , [temps[0], temps[1], '--auto', '--no-notebook']),
-    # (os.path.join(script_dir, 'post-proc.py')   , [temps[1], temps[2]]),
-    # (os.path.join(script_dir, 'traverser.py')   , [temps[2], final]),
-    (os.path.join(script_dir, 'cleaner.py')   , CLEANUP_PATHS),
+    (os.path.join(script_dir, 'tf_organiser.py'), [origin, temps[0]]),
+    (os.path.join(script_dir, 'tf2yaml.py')     , [temps[0], temps[1], '--auto', '--no-notebook']),
+    (os.path.join(script_dir, 'post-proc.py')   , [temps[1], temps[2]]),
+    (os.path.join(script_dir, 'traverser.py')   , [temps[2], final]),
+    (os.path.join(script_dir, 'combine.py')     , [final,   COMBINED_FOLDER]),
+     (os.path.join(script_dir, 'parse_values_list.py'), [final, COMBINED_FOLDER + '/test.yaml'])
 ]
 
 # --------------------
-# CLI: optional workspace override
+# CLI: workspace override and cleanup flag
 # --------------------
 parser = argparse.ArgumentParser(description="Run Terraform→YAML pipeline")
 parser.add_argument(
     '--work-dir',
     help="If given, copy 'origin' here first and run everything in that folder"
+)
+parser.add_argument(
+    '--clean',
+    action='store_true',
+    help="Run cleaner.py on CLEANUP_PATHS after the main pipeline"
 )
 args = parser.parse_args()
 
@@ -75,13 +71,13 @@ if args.work_dir:
     if os.path.exists(work):
         shutil.rmtree(work)
     shutil.copytree(origin, work)
-    logger_root = f"(workspace={work})"
-    # adjust paths to operate inside work
     origin = work
     temps = [os.path.join(work, d) for d in temps]
     final = os.path.join(work, final)
-else:
-    logger_root = ""
+
+# Append cleanup step if requested
+if args.clean:
+    scripts.append((os.path.join(script_dir, 'cleaner.py'), CLEANUP_PATHS))
 
 # --------------------
 # Setup logging & dirs
@@ -93,7 +89,7 @@ if not os.path.isdir(origin):
     logger.error(f"Source directory '{origin}' does not exist.")
     sys.exit(1)
 
-for d in temps + [final]:
+for d in temps + [final] + [COMBINED_FOLDER]:
     os.makedirs(d, exist_ok=True)
 
 # --------------------
@@ -112,4 +108,4 @@ for script_path, script_args in scripts:
         logger.error(f"❌ {script_path} exited with {e.returncode}")
         sys.exit(e.returncode)
 
-logger.info(f"{logger_root} Pipeline complete!")
+logger.info("Pipeline complete!")

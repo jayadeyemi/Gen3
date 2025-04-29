@@ -1,0 +1,7 @@
+---
+locals:
+  - vpc_id: '${var.vpc_id != "" ? var.vpc_id : data.aws_vpc.the_vpc.id}'
+  - es_policy: '${var.role_arn == "" ? local.policy1 : local.policy2}'
+  policy1: "{\n    \"Version\": \"2012-10-17\",\n    \"Statement\": [\n        {\n            \"Action\": \"es:*\",\n            \"Principal\": {\n              \"AWS\": [\n                \"${data.aws_iam_user.es_user.arn}\"\n              ]\n            },\n            \"Effect\": \"Allow\",\n            \"Resource\": \"*\"\n        }\n    ]\n}"
+  policy2: "{\n    \"Version\": \"2012-10-17\",\n    \"Statement\": [\n        {\n            \"Action\": \"es:*\",\n            \"Principal\": {\n              \"AWS\": [\n                \"${data.aws_iam_user.es_user.arn}\",\n                \"${var.role_arn}\"\n              ]\n            },\n            \"Effect\": \"Allow\",\n            \"Resource\": \"*\"\n        }\n    ]\n}"
+  - all_cidr_blocks: '${[for assoc in data.aws_vpc.the_vpc.cidr_block_associations : assoc.cidr_block]}'

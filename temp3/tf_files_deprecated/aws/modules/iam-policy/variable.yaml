@@ -1,0 +1,11 @@
+---
+variable:
+  policy_name:
+    description: Name for the policy
+  policy_path:
+    description: 'Path in which to create the policy. '
+  policy_description:
+    description: Description for the policy
+    default: ''
+  policy_json:
+    description: Basically the actual policy in JSON

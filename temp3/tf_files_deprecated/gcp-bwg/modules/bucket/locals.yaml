@@ -1,0 +1,3 @@
+---
+locals:
+  log_bucket_name: ${var.bucket_name}_logs

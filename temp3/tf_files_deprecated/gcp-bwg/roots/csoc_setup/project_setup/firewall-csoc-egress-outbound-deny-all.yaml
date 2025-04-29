@@ -1,0 +1,9 @@
+---
+module:
+  firewall-csoc-egress-outbound-deny-all:
+    source: ../../../modules/firewall-egress-deny
+    priority: ${var.csoc_egress_outbound_deny_all_priority}
+    project_id: ${data.terraform_remote_state.org_setup.project_id}
+    name: ${module.vpc-csoc-egress.network_name}-deny-all-outbound
+    network: ${module.vpc-csoc-egress.network_name}
+    protocol: ${var.csoc_egress_outbound_deny_all_protocol}

@@ -1,0 +1,10 @@
+---
+output:
+  rds_endpoint:
+    value: ${module.db.this_db_instance_endpoint}
+  rds_user:
+    value: ${module.db.this_db_instance_username}
+  rds_password:
+    value: ${module.db.this_db_instance_password}
+  output_bucket:
+    value: ${aws_s3_bucket.data_bucket.id}

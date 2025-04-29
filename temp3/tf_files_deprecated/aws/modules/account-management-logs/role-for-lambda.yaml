@@ -1,0 +1,7 @@
+---
+module:
+  role-for-lambda:
+    source: ../iam-role/
+    role_name: ${var.account_name}-security-alert-role
+    role_description: Role for the alerting lambda function
+    role_assume_role_policy: "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Sid\": \"\",\n      \"Effect\": \"Allow\",\n      \"Principal\": {\n        \"Service\": \"lambda.amazonaws.com\"\n      },\n      \"Action\": \"sts:AssumeRole\"\n    }\n  ]\n}"

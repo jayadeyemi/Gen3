@@ -1,0 +1,12 @@
+---
+resource:
+  null_resource:
+    config_setup:
+      triggers:
+        creds_change: ${data.template_file.creds.rendered}
+        config_change: ${data.template_file.configmap.rendered}
+      provisioner:
+        local-exec:
+          command: mkdir -p ${var.vpc_name}_output; echo '${data.template_file.creds.rendered}' >${var.vpc_name}_output/creds.json
+        local-exec:
+          command: echo "${data.template_file.configmap.rendered}" > ${var.vpc_name}_output/00configmap.yaml

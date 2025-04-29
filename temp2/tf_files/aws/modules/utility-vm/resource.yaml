@@ -1,0 +1,115 @@
+---
+resource:
+  - aws_cloudwatch_log_group:
+    csoc_log_group:
+      name: ${var.vm_hostname}
+      retention_in_days: 1827
+      tags:
+        Environment: ${var.environment}
+        Organization: ${var.organization_name}
+  - aws_ami_copy:
+    cdis_ami:
+      name: ${var.vm_name}_ami
+      description: A copy of ${data.aws_ami.public_ami.name}
+      source_ami_id: ${data.aws_ami.public_ami.id}
+      source_ami_region: ${var.aws_region}
+      encrypted: true
+      lifecycle:
+        - ignore_changes:
+          - ${source_ami_id}
+      tags:
+        Name: cdis
+        Environment: ${var.environment}
+  - aws_security_group:
+    ssh:
+      name: ssh_${var.vm_name}
+      description: security group that only enables ssh
+      vpc_id: ${var.vpc_id}
+      ingress:
+        - from_port: 22
+        to_port: 22
+        protocol: TCP
+        cidr_blocks:
+          - 0.0.0.0/0
+      tags:
+        Environment: ${var.environment}
+        Organization: ${var.organization_name}
+        Name: ssh_${var.vm_name}
+  - aws_security_group:
+    local:
+      name: local_${var.vm_name}
+      description: security group that only allow internal tcp traffics
+      vpc_id: ${var.vpc_id}
+      ingress:
+        - from_port: 0
+        to_port: 0
+        protocol: '-1'
+        cidr_blocks:
+          - 10.128.0.0/20
+      egress:
+        - from_port: 0
+        to_port: 0
+        protocol: '-1'
+        cidr_blocks: ${var.vpc_cidr_list}
+      tags:
+        Environment: ${var.environment}
+        Organization: ${var.organization_name}
+        Name: local_${var.vm_name}
+  - aws_iam_role:
+    vm_role:
+      name: ${var.vm_name}_role
+      path: /
+      assume_role_policy: "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Action\": \"sts:AssumeRole\",\n      \"Principal\": {\n        \"Service\": \"ec2.amazonaws.com\"\n      },\n      \"Effect\": \"Allow\",\n      \"Sid\": \"\"\n    }\n  ]\n}"
+      tags:
+        Environment: ${var.environment}
+        Organization: ${var.organization_name}
+        Name: local_${var.vm_name}
+  - aws_iam_role_policy:
+    vm_policy:
+      name: ${var.vm_name}_policy
+      policy: ${data.aws_iam_policy_document.vm_policy_document.json}
+      role: ${aws_iam_role.vm_role.id}
+  - aws_iam_role_policy:
+    vm_user_policy:
+      name: ${var.vm_name}_user_policy
+      role: ${aws_iam_role.vm_role.id}
+      policy: ${var.user_policy}
+  - aws_iam_instance_profile:
+    vm_role_profile:
+      name: ${var.vm_name}_role_profile
+      role: ${aws_iam_role.vm_role.id}
+  - aws_instance:
+    utility_vm:
+      ami: ${aws_ami_copy.cdis_ami.id}
+      subnet_id: ${var.vpc_subnet_id}
+      instance_type: ${var.instance_type}
+      monitoring: true
+      key_name: ${var.ssh_key_name}
+      vpc_security_group_ids:
+        - ${aws_security_group.ssh.id}
+        - ${aws_security_group.local.id}
+      iam_instance_profile: ${aws_iam_instance_profile.vm_role_profile.name}
+      user_data: "#!/bin/bash \n\ncat /tmp/01proxy | tee -a /etc/apt/apt.conf.d/01proxy\ncat /tmp/99-proxy.sh | tee /etc/profile.d/99-proxy.sh\nchmod +x /etc/profile.d/99-proxy.sh\n\nUSER=\"ubuntu\"\nUSER_HOME=\"/home/$USER\"\nCLOUD_AUTOMATION=\"$USER_HOME/cloud-automation\"\n(\n  source /etc/profile.d/99-proxy.sh\n  cd $USER_HOME\n  git clone https://github.com/uc-cdis/cloud-automation.git\n  cd $CLOUD_AUTOMATION\n  git pull\n  cat $CLOUD_AUTOMATION/${var.authorized_keys} | sudo tee --append $USER_HOME/.ssh/authorized_keys\n\n  # This is needed temporarily for testing purposes ; before merging the code to master\n  if [ \"${var.branch}\" != \"master\" ];\n  then\n    git checkout \"${var.branch}\"\n    git pull\n  fi\n  chown -R ubuntu. $CLOUD_AUTOMATION\n\n  echo \"127.0.1.1 ${var.vm_hostname}\" | tee --append /etc/hosts\n  hostnamectl set-hostname ${var.vm_hostname}\n\n  apt -y update\n  DEBIAN_FRONTEND='noninteractive' apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' upgrade\n\n  apt autoremove -y\n  apt clean\n  apt autoclean\n\n  cd $USER_HOME\n\n  bash \"${var.bootstrap_path}${var.bootstrap_script}\" \"cwl_group=${aws_cloudwatch_log_group.csoc_log_group.name};vm_role=${aws_iam_role.vm_role.name};account_id=${var.aws_account_id};${join(\";\",var.extra_vars)}\" 2>&1\n  cd $CLOUD_AUTOMATION\n  git checkout master\n) > /var/log/bootstrapping_script.log\n\n# Install qualys agent if the activtion and customer id provided\nif [[ ! -z \"${var.activation_id}\" ]] || [[ ! -z \"${var.customer_id}\" ]]; then\n    aws s3 cp s3://qualys-agentpackage/QualysCloudAgent.rpm ./qualys-cloud-agent.x86_64.rpm\n    sudo rpm -ivh qualys-cloud-agent.x86_64.rpm\n    # Clean up rpm package after install\n    rm qualys-cloud-agent.x86_64.rpm\n    sudo /usr/local/qualys/cloud-agent/bin/qualys-cloud-agent.sh ActivationId=${var.activation_id} CustomerId=${var.customer_id}\nfi"
+      provisioner:
+        - file:
+          content: '${var.proxy ? local.proxy_config_apt : ""}'
+          destination: /tmp/01proxy
+          connection:
+            - type: ssh
+            user: ubuntu
+            host: ${self.private_ip}
+        - file:
+          content: '${var.proxy ? local.profile_d : ""}'
+          destination: /tmp/99-proxy.sh
+          connection:
+            - type: ssh
+            user: ubuntu
+            host: ${self.private_ip}
+      lifecycle:
+        - ignore_changes:
+          - ${ami}
+          - ${key_name}
+      tags:
+        Name: ${var.vm_name}
+        Environment: ${var.environment}
+        Organization: ${var.organization_name}

@@ -1,0 +1,81 @@
+---
+resource:
+  aws_cloudwatch_log_group:
+    csoc_log_group:
+      name: ${var.child_name}
+      retention_in_days: 1827
+      tags:
+        Environment: ${var.child_name}
+        Organization: Basic Services
+  aws_security_group:
+    ssh:
+      name: ssh_${var.child_name}
+      description: security group that only enables ssh
+      vpc_id: ${var.csoc_vpc_id}
+      ingress:
+        from_port: 22
+        to_port: 22
+        protocol: TCP
+        cidr_blocks:
+          0.0.0.0/0
+      tags:
+        Environment: ${var.child_name}
+        Organization: Basic Service
+  aws_security_group:
+    local:
+      name: local_${var.child_name}
+      description: security group that only allow internal tcp traffics
+      vpc_id: ${var.csoc_vpc_id}
+      ingress:
+        from_port: 0
+        to_port: 0
+        protocol: '-1'
+        cidr_blocks:
+          10.128.0.0/20
+      egress:
+        from_port: 0
+        to_port: 0
+        protocol: '-1'
+        cidr_blocks:
+          10.128.0.0/20
+          54.224.0.0/12
+          ${var.vpc_cidr_list}
+      tags:
+        Environment: ${var.child_name}
+  aws_iam_role:
+    child_role:
+      name: ${var.child_name}_role
+      path: /
+      assume_role_policy: "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Action\": \"sts:AssumeRole\",\n      \"Principal\": {\n        \"Service\": \"ec2.amazonaws.com\"\n      },\n      \"Effect\": \"Allow\",\n      \"Sid\": \"\"\n    }\n  ]\n}"
+  aws_iam_role_policy:
+    child_policy:
+      name: ${var.child_name}_child_policy
+      policy: ${data.aws_iam_policy_document.child_policy_document.json}
+      role: ${aws_iam_role.child_role.id}
+  aws_iam_instance_profile:
+    child_role_profile:
+      name: ${var.child_name}_child_role_profile
+      role: ${aws_iam_role.child_role.id}
+  aws_instance:
+    login:
+      ami: ${data.aws_ami.ubuntu.id}
+      subnet_id: ${var.csoc_subnet_id}
+      instance_type: t2.micro
+      monitoring: true
+      key_name: ${var.ssh_key_name}
+      vpc_security_group_ids:
+        ${aws_security_group.ssh.id}
+        ${aws_security_group.local.id}
+      iam_instance_profile: ${aws_iam_instance_profile.child_role_profile.name}
+      root_block_device:
+        volume_size: 24
+        encrypted: true
+      tags:
+        Name: ${var.child_name}_admin
+        Environment: ${var.child_name}
+      lifecycle:
+        ignore_changes:
+          ami
+          key_name
+          root_block_device
+      user_data: "#!/bin/bash \n#Proxy configuration and hostname assigment for the adminVM\necho http_proxy=http://cloud-proxy.internal.io:3128 >> /etc/environment\necho https_proxy=http://cloud-proxy.internal.io:3128/ >> /etc/environment\necho no_proxy=\"localhost,127.0.0.1,localaddress,169.254.169.254,.internal.io,logs.us-east-1.amazonaws.com\"  >> /etc/environment\necho 'Acquire::http::Proxy \"http://cloud-proxy.internal.io:3128\";' >> /etc/apt/apt.conf.d/01proxy\necho 'Acquire::https::Proxy \"http://cloud-proxy.internal.io:3128\";' >> /etc/apt/apt.conf.d/01proxy\necho '127.0.1.1 ${var.child_name}_admin' | sudo tee --append /etc/hosts\nsudo hostnamectl set-hostname '${var.child_name}'_admin\n\n#Requirements for cloud-automation\ncd /home/ubuntu\nsudo git clone https://github.com/uc-cdis/cloud-automation.git \nsudo apt install -y unzip\nsudo apt-get -y install jq\n#sudo wget -O /tmp/terraform.zip  \\$(echo \"https://releases.hashicorp.com/terraform/$(curl -s https://checkpoint-api.hashicorp.com/v1/check/terraform | jq -r -M '.current_version')/terraform_\\$(curl -s https://checkpoint-api.hashicorp.com/v1/check/terraform | jq -r -M '.current_version')_linux_amd64.zip\")\nsudo wget -O /tmp/terraform.zip https://releases.hashicorp.com/terraform/0.11.5/terraform_0.11.5_linux_amd64.zip\nsudo unzip /tmp/terraform.zip -d /tmp\nsudo mv /tmp/terraform /usr/local/bin\nsudo chmod +x /usr/local/bin/terraform\nsudo cat <<EOT  >>  /home/ubuntu/.bashrc\nexport GEN3_HOME=\"/home/ubuntu/cloud-automation\"\nif [ -f \"\\$${GEN3_HOME}/gen3/gen3setup.sh\" ]; then\n  source \"\\$${GEN3_HOME}/gen3/gen3setup.sh\"\nfi\nEOT\n\n\n# Adding AWS profile to the admin VM\nsudo python -m pip install awscli\nsudo mkdir -p /home/ubuntu/.aws\nsudo cat <<EOT  >> /home/ubuntu/.aws/config\n[default]\noutput = json\nregion = us-east-1\nrole_session_name = gen3-adminvm\nrole_arn = arn:aws:iam::${var.child_account_id}:role/csoc_adminvm\ncredential_source = Ec2InstanceMetadata\n[profile ${var.child_name}]\noutput = json\nregion = us-east-1\nrole_session_name = gen3-adminvm\nrole_arn = arn:aws:iam::${var.child_account_id}:role/csoc_adminvm\ncredential_source = Ec2InstanceMetadata\nEOT\nsudo chown ubuntu:ubuntu -R /home/ubuntu/\n\n# Logging\n\nsed -i 's/SERVER/login_node-auth-{hostname}-{instance_id}/g' /var/awslogs/etc/awslogs.conf\nsed -i 's/VPC/'${aws_cloudwatch_log_group.csoc_log_group.name}'/g' /var/awslogs/etc/awslogs.conf\ncat >> /var/awslogs/etc/awslogs.conf <<EOM\n[syslog]\ndatetime_format = %b %d %H:%M:%S\nfile = /var/log/syslog\nlog_stream_name = login_node-syslog-{hostname}-{instance_id}\ntime_zone = LOCAL\nlog_group_name = ${aws_cloudwatch_log_group.csoc_log_group.name}\nEOM\n\nchmod 755 /etc/init.d/awslogs\nsystemctl enable awslogs\nsystemctl restart awslogs"

@@ -1,0 +1,99 @@
+---
+resource:
+  aws_s3_bucket:
+    management-logs_bucket:
+      bucket: ${var.account_name}-management-logs
+      tags:
+        Environment: ${var.account_name}
+        Organization: CTDS
+  aws_s3_bucket_server_side_encryption_configuration:
+    management-logs_bucket:
+      bucket: ${aws_s3_bucket.management-logs_bucket.id}
+      rule:
+        apply_server_side_encryption_by_default:
+          sse_algorithm: AES256
+  aws_s3_bucket_lifecycle_configuration:
+    management-logs_bucket:
+      bucket: ${aws_s3_bucket.management-logs_bucket.id}
+      rule:
+        status: Enabled
+        id: management-logs
+        filter:
+          and:
+            prefix: management-logs/
+            tags:
+              rule: log
+              autoclean: 'true'
+        transition:
+          days: 30
+          storage_class: ONEZONE_IA
+          days: 60
+          storage_class: GLACIER
+        expiration:
+          days: 120
+  aws_s3_bucket_policy:
+    b:
+      bucket: ${aws_s3_bucket.management-logs_bucket.id}
+      policy: ${local.bucket_policy}
+  aws_cloudwatch_log_group:
+    management-logs_group:
+      name: ${var.account_name}_management-logs
+      retention_in_days: 1827
+      tags:
+        Environment: ALL
+        Organization: CTDS
+  aws_iam_role:
+    cloudtrail_role:
+      name: management-logs_cloudtrail_role
+      path: /
+      assume_role_policy: "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Sid\": \"\",\n      \"Effect\": \"Allow\",\n      \"Principal\": {\n        \"Service\": \"cloudtrail.amazonaws.com\"\n      },\n      \"Action\": \"sts:AssumeRole\"\n    }\n  ]\n}"
+      tags:
+        Environment: ${var.account_name}
+        Organization: CTDS
+  aws_iam_role_policy:
+    cloudtrail_to_cloudwatch_policy:
+      name: ${var.account_name}_management-logs_policy
+      policy: ${data.aws_iam_policy_document.cloudtrail_to_cloudwatch_policy_document.json}
+      role: ${aws_iam_role.cloudtrail_role.id}
+  aws_cloudtrail:
+    logs-trail:
+      name: ${var.account_name}_management_trail
+      is_multi_region_trail: true
+      cloud_watch_logs_role_arn: ${aws_iam_role.cloudtrail_role.arn}
+      cloud_watch_logs_group_arn: ${aws_cloudwatch_log_group.management-logs_group.arn}
+      s3_bucket_name: ${aws_s3_bucket.management-logs_bucket.id}
+      s3_key_prefix: management-logs
+      event_selector:
+        read_write_type: All
+        include_management_events: true
+      tags:
+        Environment: ${var.account_name}
+        Organization: CTDS
+  aws_cloudwatch_log_subscription_filter:
+    csoc_subscription:
+      name: ${var.account_name}_subscription
+      destination_arn: arn:aws:logs:${data.aws_region.current.name}:${var.csoc_account_id}:destination:management-logs_logs_destination
+      log_group_name: ${aws_cloudwatch_log_group.management-logs_group.name}
+      filter_pattern: ''
+  aws_lambda_permission:
+    allow_cloudwatch:
+      statement_id: AllowExecutionFromCloudWatch
+      action: lambda:InvokeFunction
+      function_name: ${element(module.alerting-lambda.function_name, 0)}
+      principal: events.amazonaws.com
+      source_arn: ${module.cloudwatch-events.event_arn}
+  aws_iam_role_policy:
+    lambda_policy_SNS:
+      name: ${var.account_name}-security-alert-policy-for-SNS
+      policy: ${data.aws_iam_policy_document.sns_access.json}
+      role: ${module.role-for-lambda.role_id}
+  aws_iam_role_policy:
+    lambda_policy_CT:
+      name: ${var.account_name}-security-alert-policy-for-CloudTrail
+      policy: ${data.aws_iam_policy_document.cloudtrail_access.json}
+      role: ${module.role-for-lambda.role_id}
+  aws_iam_role_policy:
+    lambda_policy_CWL:
+      name: ${var.account_name}-security-alert-policy-for-CloudWatchLogs
+      policy: ${data.aws_iam_policy_document.cloudwatchlogs_access.json}
+      role: ${module.role-for-lambda.role_id}

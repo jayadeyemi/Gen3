@@ -1,0 +1,10 @@
+---
+data:
+  - google_folder:
+    production:
+      count: ${length(var.folder_iam_binding)}
+      folder: folders/${element(var.folder_iam_binding, count.index)}
+  - google_storage_bucket_object:
+    bucket_name_iam:
+      count: ${length(var.bucket_name_iam)}
+      bucket: ${element(var.bucket_name_iam, count.index)}

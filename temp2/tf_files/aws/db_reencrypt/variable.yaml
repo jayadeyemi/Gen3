@@ -1,0 +1,47 @@
+---
+variable:
+  - vpc_name: {}
+  - db_instance_identifier:
+    default: ''
+  - db_kms_key_id:
+    default: ''
+  - cluster_identifier:
+    description: Cluster Identifier
+    type: string
+    default: aurora-cluster
+  - cluster_instance_identifier:
+    description: Cluster Instance Identifier
+    type: string
+    default: aurora-cluster-instance
+  - serverlessv2_scaling_min_capacity:
+    type: string
+    description: Serverless v2 RDS cluster minimum scaling capacity in ACUs
+    default: '0.5'
+  - serverlessv2_scaling_max_capacity:
+    type: string
+    description: Serverless v2 RDS cluster maximum scaling capacity in ACUs
+    default: '10.0'
+  - master_username:
+    description: Master DB username
+    type: string
+    default: postgres
+  - master_password:
+    description: Master DB password
+    type: string
+    default: ''
+  - storage_encrypted:
+    description: Specifies whether storage encryption is enabled
+    type: bool
+    default: true
+  - engine_mode:
+    type: string
+    description: use provisioned for Serverless v2 RDS cluster
+    default: provisioned
+  - password_length:
+    type: number
+    description: The length of the password string
+    default: 12
+  - instance_class:
+    description: Cluster Instance Class
+    type: string
+    default: db.serverless

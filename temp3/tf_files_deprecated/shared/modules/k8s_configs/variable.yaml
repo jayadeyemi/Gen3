@@ -1,0 +1,52 @@
+---
+variable:
+  vpc_name: {}
+  hostname: {}
+  kube_bucket_name:
+    default: ''
+  logs_bucket_name:
+    default: ''
+  ssl_certificate_id:
+    default: AWS-CERTIFICATE-ID
+  dictionary_url: {}
+  portal_app: {}
+  config_folder: {}
+  gdcapi_oauth2_client_id:
+    default: deprecated
+  gdcapi_oauth2_client_secret:
+    default: deprecated
+  gdcapi_indexd_password: {}
+  gdcapi_secret_key: {}
+  hmac_encryption_key:
+    default: deprecated
+  google_client_id: {}
+  google_client_secret: {}
+  db_fence_name:
+    default: fence
+  db_fence_password: {}
+  db_fence_username:
+    default: fence_user
+  db_fence_address: {}
+  db_indexd_name:
+    default: indexd
+  db_indexd_password: {}
+  db_indexd_username:
+    default: indexd_user
+  db_indexd_address: {}
+  db_sheepdog_password: {}
+  db_peregrine_password: {}
+  db_gdcapi_username:
+    default: sheepdog
+  db_gdcapi_password:
+    default: ''
+  db_gdcapi_name:
+    default: gdcapi
+  db_gdcapi_address: {}
+  aws_user_key: {}
+  aws_user_key_id: {}
+  indexd_prefix: {}
+  mailgun_api_key: {}
+  mailgun_smtp_host:
+    default: smtp.mailgun.org
+  mailgun_api_url:
+    default: https://api.mailgun.net/v3/

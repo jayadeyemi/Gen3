@@ -1,0 +1,26 @@
+---
+module:
+  db:
+    source: terraform-aws-modules/rds/aws
+    version: ~> 2.0
+    identifier: ${var.slurm_rds["slurmdb"]["name"]}
+    engine: ${var.slurm_rds["slurmdb"]["engine"]}
+    engine_version: ${var.slurm_rds["slurmdb"]["engine_version"]}
+    instance_class: ${var.slurm_rds["slurmdb"]["instance_class"]}
+    allocated_storage: ${var.slurm_rds["slurmdb"]["allocated_storage"]}
+    name: ${var.slurm_rds["slurmdb"]["name"]}
+    username: ${var.slurm_rds["slurmdb"]["username"]}
+    password: ${var.slurm_rds["slurmdb"]["password"]}
+    port: ${var.slurm_rds["slurmdb"]["port"]}
+    maintenance_window: ${var.slurm_rds["slurmdb"]["maintenance_window"]}
+    backup_window: ${var.slurm_rds["slurmdb"]["backup_window"]}
+    subnet_ids: ${var.slurm_rds["slurmdb"]["subnet_ids"]}
+    iam_database_authentication_enabled: ${var.slurm_rds["slurmdb"]["iam_database_authentication_enabled"]}
+    vpc_security_group_ids: ${var.slurm_rds["slurmdb"]["vpc_security_group_ids"]}
+    family: ${var.slurm_rds["slurmdb"]["family"]}
+    major_engine_version: ${var.slurm_rds["slurmdb"]["major_engine_version"]}
+    final_snapshot_identifier: ${var.slurm_rds["slurmdb"]["final_snapshot_identifier"]}
+    deletion_protection: ${var.slurm_rds["slurmdb"]["deletion_protection"]}
+    parameters: ${var.slurm_rds["slurmdb"]["parameters"]}
+    tags: ${var.slurm_rds["slurmdb"]["tags"]}
+    db_subnet_group_name: ${var.slurm_rds["slurmdb"]["db_subnet_group_name"]}

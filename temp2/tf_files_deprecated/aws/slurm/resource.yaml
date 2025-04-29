@@ -1,0 +1,54 @@
+---
+resource:
+  - aws_iam_role:
+    the_role:
+      name: ${var.vpc_name}_slurm_instances_role
+      description: Role for slurm instances
+      force_detach_policies: true
+      assume_role_policy: "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Action\": \"sts:AssumeRole\",\n      \"Principal\": {\n        \"Service\": \"ec2.amazonaws.com\"\n      },\n      \"Effect\": \"Allow\",\n      \"Sid\": \"\"\n    }\n  ]\n}"
+      tags:
+        Environment: ${var.vpc_name}
+        Organization: ${var.organization_name}
+  - aws_iam_role_policy:
+    slurm_instances_role:
+      name: basicAccess
+      policy: ${data.aws_iam_policy_document.vm_policy_document.json}
+      role: ${aws_iam_role.the_role.id}
+  - aws_iam_role_policy:
+    slurm_access_to_data_bucket:
+      count: ${length(data.aws_iam_policy_document.source_bucket_acccess)}
+      name: access_to_data_buckets_${count.index}
+      policy: ${data.aws_iam_policy_document.source_bucket_acccess[count.index].json}
+      role: ${aws_iam_role.the_role.id}
+  - aws_iam_role_policy:
+    slurm_access_to_output_bucket:
+      name: access_to_output_bucket
+      policy: ${data.aws_iam_policy_document.output_bucket_access.json}
+      role: ${aws_iam_role.the_role.id}
+  - aws_iam_role_policy_attachment:
+    AmazonSSMManagedInstanceCore:
+      role: ${aws_iam_role.the_role.name}
+      policy_arn: ${data.aws_iam_policy.AmazonSSMManagedInstanceCore.arn}
+  - aws_iam_instance_profile:
+    slurm_nodes_instance_profile:
+      name: ${var.vpc_name}_slurm_instances
+      role: ${aws_iam_role.the_role.name}
+  - aws_s3_bucket:
+    data_bucket:
+      bucket: ${var.vpc_name}-slurm-data-bucket
+      acl: private
+      server_side_encryption_configuration:
+        - rule:
+          - apply_server_side_encryption_by_default:
+            - sse_algorithm: AES256
+      tags:
+        Name: ${var.vpc_name}-data-bucket
+        Organization: ${var.organization_name}
+        Purpose: data bucket
+  - aws_s3_bucket_public_access_block:
+    data_bucket_privacy:
+      bucket: ${aws_s3_bucket.data_bucket.id}
+      block_public_acls: true
+      block_public_policy: true
+      ignore_public_acls: true
+      restrict_public_buckets: true

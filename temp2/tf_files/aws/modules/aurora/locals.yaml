@@ -1,0 +1,4 @@
+---
+locals:
+  - aurora-creds-template: "{\n    \"aurora\": {\n        \"db_host\": \"${aws_rds_cluster.postgresql.endpoint}\",\n        \"db_username\": \"${aws_rds_cluster.postgresql.master_username}\",\n        \"db_password\": \"${aws_rds_cluster.postgresql.master_password}\",\n    }\n}"
+  - pg_family_version: ${replace(var.cluster_engine_version, "/\\.[0-9]/", "")}

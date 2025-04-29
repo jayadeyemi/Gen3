@@ -1,0 +1,12 @@
+---
+module:
+  squid_create_autoscaler:
+    source: ../../../modules/autoscaler
+    project: ${data.terraform_remote_state.org_setup.project_id}
+    name: ${var.squid_name}-autoscaler
+    target_instance_group: ${module.squid_instance_group.instance_group_manager_self_link}
+    zone: ${var.squid_zone}
+    min_replicas: ${var.squid_min_replicas}
+    max_replicas: ${var.squid_max_replicas}
+    cpu_utilization_target: ${var.squid_cpu_utilization_target}
+    cooldown_period: ${var.squid_cooldown_period}

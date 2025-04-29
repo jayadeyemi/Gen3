@@ -1,0 +1,3 @@
+---
+locals:
+  - clean_bucket_name: ${replace(replace(var.log_bucket_name, "_", "-"),".", "-")}

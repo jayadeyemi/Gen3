@@ -1,0 +1,32 @@
+---
+module:
+  - eks:
+    source: terraform-aws-modules/eks/aws
+    cluster_name: ${var.vpc_name}
+    cluster_version: ${var.eks_version}
+    cluster_endpoint_public_access: true
+    cluster_addons:
+      kube-proxy: {}
+      vpc-cni: {}
+      coredns:
+        configuration_values: '${jsonencode({"computeType": "Fargate", "resources": {"limits": {"cpu": "0.25", "memory": "256M"}, "requests": {"cpu": "0.25", "memory": "256M"}}})}'
+    vpc_id: ${module.vpc.vpc_id}
+    subnet_ids: ${module.vpc.private_subnets}
+    control_plane_subnet_ids: ${module.vpc.intra_subnets}
+    create_cluster_security_group: false
+    create_node_security_group: false
+    manage_aws_auth_configmap: true
+    aws_auth_roles:
+      - rolearn: ${module.karpenter.role_arn}
+      username: system:node:{{EC2PrivateDNSName}}
+      groups:
+        - system:bootstrappers
+        - system:nodes
+    fargate_profiles:
+      karpenter:
+        selectors:
+          - namespace: karpenter
+      kube-system:
+        selectors:
+          - namespace: kube-system
+    tags: '${merge(local.tags, {"karpenter.sh/discovery": "${var.vpc_name}"})}'

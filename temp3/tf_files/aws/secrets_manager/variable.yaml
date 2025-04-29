@@ -1,0 +1,6 @@
+---
+variable:
+  vpc_name: {}
+  role: {}
+  secret: {}
+  secret_name: {}

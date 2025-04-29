@@ -1,0 +1,16 @@
+---
+module:
+  create_fw_squid_hc_rule:
+    source: ../../../modules/firewall
+    name: ${var.squid_name}-${var.squid_fw_name}
+    project_id: ${data.terraform_remote_state.org_setup.project_id}
+    enable_logging: ${var.squid_fw_enable_logging}
+    direction: ${var.squid_fw_direction}
+    priority: ${var.squid_fw_priority}
+    network: ${data.terraform_remote_state.project_setup.network_name_commons_private}
+    source_ranges: ${var.squid_fw_source_ranges}
+    target_tags:
+      ${var.inbound_proxy_port_name}
+    protocol: ${var.squid_fw_protocol}
+    ports:
+      ${var.squid_hc_tcp_health_check_port}

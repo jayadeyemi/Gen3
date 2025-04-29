@@ -1,0 +1,8 @@
+---
+variable:
+  vpc_name: {}
+  instance_type:
+    default: t3.small
+  instance_count:
+    default: 5
+  ssh_public_key: {}

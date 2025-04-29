@@ -1,0 +1,8 @@
+---
+provider:
+  - google:
+    credentials: ${file("${var.credential_file}")}
+    region: ${var.region}
+  - google-beta:
+    credentials: ${file("${var.credential_file}")}
+    region: ${var.region}

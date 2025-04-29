@@ -1,0 +1,10 @@
+---
+output:
+  - bucket_name:
+    value: ${module.s3_bucket.bucket_name}
+  - log_bucket_name:
+    value: ${module.s3_bucket.log_bucket_name}
+  - rw_role_id:
+    value: ${module.s3_bucket.rw_role_id}
+  - ro_role_id:
+    value: ${module.s3_bucket.ro_role_id}

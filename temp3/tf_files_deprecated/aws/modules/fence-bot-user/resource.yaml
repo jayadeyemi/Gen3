@@ -1,0 +1,22 @@
+---
+resource:
+  aws_iam_user:
+    fence-bot:
+      name: ${var.vpc_name}_fence-bot
+  aws_iam_access_key:
+    fence-bot_user_key:
+      user: ${aws_iam_user.fence-bot.name}
+  aws_iam_user_policy:
+    fence-bot_policy:
+      name: ${var.vpc_name}_fence-bot_policy
+      user: ${aws_iam_user.fence-bot.name}
+      policy: "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Action\": [\n        \"s3:PutObject\",\n        \"s3:GetObject\",\n        \"s3:DeleteObject\"\n      ],\n      \"Effect\": \"Allow\",\n      \"Resource\": [\"${data.aws_s3_bucket.data-bucket.arn}/*\"]\n    },\n    {\n       \"Action\": [\n         \"s3:List*\",\n         \"s3:Get*\"\n       ],\n      \"Effect\": \"Allow\",\n      \"Resource\": [\"${data.aws_s3_bucket.data-bucket.arn}/*\", \"${data.aws_s3_bucket.data-bucket.arn}\"]\n    }\n  ]\n}"
+      lifecycle:
+        ignore_changes:
+          policy
+  aws_iam_user_policy:
+    fence-bot_extra_policy:
+      count: ${length(var.bucket_access_arns)}
+      name: ${var.vpc_name}_fence-bot_policy_${count.index}
+      user: ${aws_iam_user.fence-bot.name}
+      policy: "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Action\": [\n        \"s3:PutObject\",\n        \"s3:GetObject\",\n        \"s3:DeleteObject\"\n      ],\n      \"Effect\": \"Allow\",\n      \"Resource\": [\"${var.bucket_access_arns[count.index]}/*\"]\n    },\n    {\n       \"Action\": [\n         \"s3:List*\",\n         \"s3:Get*\"\n       ],\n      \"Effect\": \"Allow\",\n      \"Resource\": [\"${var.bucket_access_arns[count.index]}/*\", \"${var.bucket_access_arns[count.index]}\"]\n    }\n  ]\n}"

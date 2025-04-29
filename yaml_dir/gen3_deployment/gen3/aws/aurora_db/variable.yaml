@@ -1,0 +1,34 @@
+---
+variable:
+  vpc_name:
+    default: ''
+  service:
+    default: ''
+  admin_database_username:
+    default: postgres
+  admin_database_name:
+    default: postgres
+  admin_database_password:
+    default: ''
+  namespace:
+    default: default
+  role:
+    default: ''
+  database_name:
+    default: ''
+  username:
+    default: ''
+  password:
+    default: ''
+  secrets_manager_enabled:
+    default: true
+  dump_file_to_restore:
+    default: ''
+  dump_file_storage_location:
+    default: ''
+  db_restore:
+    default: false
+  db_dump:
+    default: false
+  db_job_role_arn:
+    default: ''

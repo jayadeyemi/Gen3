@@ -1,0 +1,9 @@
+---
+module:
+  activity_storage:
+    source: ../../../modules/bucket
+    bucket_name: ${var.bucket_activity_logs}
+    project: ${data.terraform_remote_state.org_setup.project_id}
+    force_destroy: ${var.bucket_destroy}
+    storage_class: ${var.bucket_class}
+    labels: ${var.bucket_data_access_logs_labels}

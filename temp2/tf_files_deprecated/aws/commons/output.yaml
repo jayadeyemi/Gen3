@@ -1,0 +1,20 @@
+---
+output:
+  - aws_region:
+    value: ${var.aws_region}
+  - vpc_name:
+    value: ${var.vpc_name}
+  - vpc_cidr_block:
+    value: ${module.cdis_vpc.vpc_cidr_block}
+  - indexd_rds_id:
+    value: ${aws_db_instance.db_indexd.*.id}
+  - fence_rds_id:
+    value: ${aws_db_instance.db_fence.*.id}
+  - gdcapi_rds_id:
+    value: ${aws_db_instance.db_gdcapi.*.id}
+  - fence-bot_user_secret:
+    value: ${module.cdis_vpc.fence-bot_secret}
+  - fence-bot_user_id:
+    value: ${module.cdis_vpc.fence-bot_id}
+  - data-bucket_name:
+    value: ${module.cdis_vpc.data-bucket_name}

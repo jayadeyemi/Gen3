@@ -1,0 +1,13 @@
+---
+variable:
+  - vpc_name: {}
+  - ami_id:
+    default: ''
+  - size:
+    default: 80
+  - cache_size:
+    default: 150
+  - s3_bucket:
+    default: ''
+  - key_name:
+    default: ''

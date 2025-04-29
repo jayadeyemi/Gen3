@@ -1,0 +1,25 @@
+---
+module:
+  vpc-commons-private:
+    source: ../../../modules/vpc
+    project_id: ${data.terraform_remote_state.org_setup.project_id}
+    network_name: ${var.commons_private_network_name}
+    subnets:
+      subnet_name: ${var.commons_private_subnet_name}
+      subnet_ip: ${var.commons_private_subnet_ip}
+      subnet_region: ${var.commons_private_region}
+      subnet_flow_logs: ${var.commons_private_subnet_flow_logs}
+      subnet_private_access: ${var.commons_private_subnet_private_access}
+    secondary_ranges:
+      ${var.commons_private_subnet_name}:
+        range_name: ${var.commons_private_subnet_secondary_name1}
+        ip_cidr_range: ${var.commons_private_subnet_secondary_ip1}
+        range_name: ${var.commons_private_subnet_secondary_name2}
+        ip_cidr_range: ${var.commons_private_subnet_secondary_ip2}
+    routes:
+      name: ${var.google_apis_route}
+      destination_range: 199.36.153.4/30
+      next_hop_internet: 'true'
+      name: commons-default-route
+      destination_range: 0.0.0.0/0
+      next_hop_internet: 'true'

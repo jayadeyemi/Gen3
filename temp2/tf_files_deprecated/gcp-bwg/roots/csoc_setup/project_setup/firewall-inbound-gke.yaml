@@ -1,0 +1,17 @@
+---
+module:
+  - firewall-inbound-gke:
+    source: ../../../modules/firewall-ingress
+    enable_logging: ${var.inbound_from_gke_enable_logging}
+    priority: ${var.inbound_from_gke_priority}
+    project_id: ${data.terraform_remote_state.org_setup.project_id}
+    direction: INGRESS
+    name: ${var.inbound_from_gke_name}
+    network: ${module.vpc-csoc-private.network_name}
+    protocol: ${var.inbound_from_gke_protocol}
+    ports:
+      - ${var.inbound_from_gke_ports}
+    source_ranges:
+      - ${var.inbound_from_gke_source_ranges}
+    target_tags:
+      - ${var.inbound_from_gke_target_tags}
