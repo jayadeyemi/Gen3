@@ -1,5 +1,0 @@
----
-locals:
-  proxy_config_environment: "http_proxy=http://cloud-proxy.internal.io:3128\nhttps_proxy=http://cloud-proxy.internal.io:3128\nno_proxy=localhost,127.0.0.1,localaddress,169.254.169.254,.internal.io,logs.us-east-1.amazonaws.com"
-  proxy_config_apt: "Acquire::http::Proxy \"http://cloud-proxy.internal.io:3128\";\nAcquire::https::Proxy \"http://cloud-proxy.internal.io:3128\";"
-  profile_d: "#!/bin/bash\nexport http{,s}_proxy=http://cloud-proxy.internal.io:3128\nexport no_proxy=\"localhost,127.0.0.1,localaddress,169.254.169.254,.internal.io,logs.${data.aws_region.current.name}.amazonaws.com\""

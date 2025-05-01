@@ -1,0 +1,65 @@
+rds:
+  enabled: true
+  engine: postgres
+  engineVersion: "13"
+  storageEncrypted: true
+  storageType: gp2
+  autoMinorVersionUpgrade: true
+  copyTagsToSnapshot: true
+  deletionProtection: true
+
+global:
+  vpcName: commons1
+  organizationName: Basic Services
+
+instances:
+  - name: fence
+    enabled: true
+    dbInstanceClass: db.t3.small
+    allocatedStorage: 20
+    dbName: fence
+    masterUsername: fence_user
+    masterUserPassword: ""       # or set via --set
+    snapshotIdentifier: commons1-fencedb
+    preferredBackupWindow: "06:00-06:59"
+    preferredMaintenanceWindow: "SAT:09:00-SAT:09:59"
+    backupRetentionPeriod: 4
+    multiAZ: false
+    autoMinorVersionUpgrade: true
+    maxAllocatedStorage: 0
+    vpcSecurityGroupIDs:
+      - sg-0123456789abcdef0
+
+  - name: sheepdog
+    enabled: false
+    dbInstanceClass: db.t3.small
+    allocatedStorage: 15
+    dbName: gdcapi
+    masterUsername: sheepdog
+    masterUserPassword: ""
+    snapshotIdentifier: commons1-sheepdogdb
+    preferredBackupWindow: "07:00-07:59"
+    preferredMaintenanceWindow: "SAT:10:00-SAT:10:59"
+    backupRetentionPeriod: 4
+    multiAZ: false
+    autoMinorVersionUpgrade: true
+    maxAllocatedStorage: 0
+    vpcSecurityGroupIDs:
+      - sg-0123456789abcdef0
+
+  - name: indexd
+    enabled: false
+    dbInstanceClass: db.t3.small
+    allocatedStorage: 10
+    dbName: indexd
+    masterUsername: indexd_user
+    masterUserPassword: ""
+    snapshotIdentifier: commons1-indexddb
+    preferredBackupWindow: "08:00-08:59"
+    preferredMaintenanceWindow: "SAT:11:00-SAT:11:59"
+    backupRetentionPeriod: 4
+    multiAZ: false
+    autoMinorVersionUpgrade: true
+    maxAllocatedStorage: 0
+    vpcSecurityGroupIDs:
+      - sg-0123456789abcdef0

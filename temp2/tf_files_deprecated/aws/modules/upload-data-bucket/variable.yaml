@@ -1,5 +1,0 @@
----
-variable:
-  - vpc_name: {}
-  - environment: {}
-  - cloudwatchlogs_group: {}

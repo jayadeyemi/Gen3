@@ -1,9 +1,0 @@
----
-module:
-  firewall-commons-egress-outbound-deny-all:
-    source: ../../../modules/firewall-egress-deny
-    priority: ${var.egress_deny_all_priority}
-    project_id: ${data.terraform_remote_state.org_setup.project_id}
-    name: ${module.vpc-commons-private.network_name}-${var.egress_deny_all_name}
-    network: ${module.vpc-commons-private.network_name}
-    protocol: ${var.egress_deny_all_protocol}

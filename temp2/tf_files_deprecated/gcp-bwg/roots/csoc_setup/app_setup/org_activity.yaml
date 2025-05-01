@@ -1,8 +1,0 @@
----
-module:
-  - org_activity:
-    source: ../../../modules/stackdriver/org_sink
-    name: ${var.activity_sink_name}
-    org_id: ${var.org_id}
-    destination: ${module.activity_storage.bucket_name}
-    filter: ${var.activity_filter}

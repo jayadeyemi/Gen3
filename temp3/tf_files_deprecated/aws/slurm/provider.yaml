@@ -1,4 +1,0 @@
----
-provider:
-  aws:
-    region: ${var.slurm_cluster_region}

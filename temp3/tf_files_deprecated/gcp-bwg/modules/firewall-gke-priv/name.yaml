@@ -1,2 +1,0 @@
----
-name: ${var.fw_rule_deny_all_egress}

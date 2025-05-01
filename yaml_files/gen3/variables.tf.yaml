@@ -1,0 +1,220 @@
+variable:
+- ambassador_enabled:
+    description: Enable ambassador
+    type: bool
+    default: true
+- arborist_enabled:
+    description: Enable arborist
+    type: bool
+    default: true
+- argo_enabled:
+    description: Enable argo
+    type: bool
+    default: true
+- audit_enabled:
+    description: Enable audit
+    type: bool
+    default: true
+- aurora_username:
+    description: aurora username
+    default: ''
+- aurora_hostname:
+    description: aurora hostname
+    default: ''
+- aurora_password:
+    description: aurora password
+    default: ''
+- aws-es-proxy_enabled:
+    description: Enable aws-es-proxy
+    type: bool
+    default: true
+- dbgap_enabled:
+    description: Enable dbgap sync in the usersync job
+    type: bool
+    default: false
+- dd_enabled:
+    description: Enable datadog
+    type: bool
+    default: false
+- deploy_external_secrets:
+    description: Deploy external secrets
+    type: bool
+    default: false
+- deploy_grafana:
+    description: Deploy grafana
+    type: bool
+    default: false
+- deploy_s3_mountpoint:
+    description: Deploy s3 mountpoints
+    type: bool
+    default: false
+- dictionary_url:
+    description: URL to the data dictionary
+    default: ''
+- dispatcher_job_number:
+    description: Number of dispatcher jobs
+    default: 10
+- dicom-server_enabled:
+    description: Enable dicom
+    type: bool
+    default: false
+- dicom-viewer_enabled:
+    description: Enable dicom server
+    type: bool
+    default: false
+- es_endpoint:
+    description: Elasticsearch endpoint
+    default: ''
+- es_user_key:
+    description: Elasticsearch user access key
+    default: ''
+- es_user_secret:
+    description: Elasticsearch user secret key
+    default: ''
+- fence_enabled:
+    description: Enable fence
+    type: bool
+    default: true
+- gen3ff_enabled:
+    description: Enable gen3ff
+    type: bool
+    default: false
+- gen3ff_repo:
+    description: Gen3ff repo
+    default: quay.io/cdis/frontend-framework
+- gen3ff_tag:
+    description: Gen3ff tag
+    default: main
+- guppy_enabled:
+    description: Enable guppy
+    type: bool
+    default: true
+- hatchery_enabled:
+    description: Enable hatchery
+    type: bool
+    default: true
+- hostname:
+    description: hostname of the commons
+    default: ''
+- indexd_enabled:
+    description: Enable indexd
+    type: bool
+    default: true
+- indexd_prefix:
+    description: Indexd prefix
+    default: dg.XXXX/
+- ingress_enabled:
+    description: Create ALB ingress
+    type: bool
+    default: true
+- manifestservice_enabled:
+    description: Enable manfiestservice
+    type: bool
+    default: true
+- metadata_enabled:
+    description: Enable metadata
+    type: bool
+    default: true
+- netpolicy_enabled:
+    description: Enable network policy security rules
+    type: bool
+    default: false
+- peregrine_enabled:
+    description: Enable perergrine
+    type: bool
+    default: true
+- pidgin_enabled:
+    description: Enable pidgin
+    type: bool
+    default: false
+- portal_enabled:
+    description: Enable portal
+    type: bool
+    default: true
+- public_datasets:
+    description: whether the datasets are public
+    type: bool
+    default: false
+- requestor_enabled:
+    description: Enable requestor
+    type: bool
+    default: false
+- revproxy_arn:
+    description: ARN for the revproxy cert in ACM
+    default: ''
+- revproxy_enabled:
+    description: Enable revproxy
+    type: bool
+    default: true
+- sheepdog_enabled:
+    description: Enable sheepdog
+    type: bool
+    default: true
+- slack_send_dbgap:
+    description: Enable slack message for usersync job
+    type: bool
+    default: false
+- slack_webhook:
+    description: Slack webhook
+    default: ''
+- ssjdispatcher_enabled:
+    description: Enable ssjdispatcher
+    type: bool
+    default: true
+- sower_enabled:
+    description: Enable sower
+    type: bool
+    default: true
+- tier_access_level:
+    description: Tier access level for guppy
+    default: private
+- tier_access_limit:
+    description: value for tier access limit
+    default: '100'
+- usersync_enabled:
+    description: Enable usersync cronjob
+    type: bool
+    default: true
+- usersync_schedule:
+    description: Cronjob schedule for usersync
+    default: '*/30 * * * *'
+- useryaml_s3_path:
+    description: S3 path to the user.yaml file
+    default: s3://cdis-gen3-users/dev/user.yaml
+- vpc_name:
+    description: Name of the VPC
+    default: ''
+- wts_enabled:
+    description: Enable wts
+    type: bool
+    default: true
+- cluster_endpoint:
+    default: ''
+- cluster_ca_cert:
+    default: ''
+- cluster_name:
+    default: ''
+- oidc_provider_arn:
+    default: ''
+- useryaml_path:
+    default: ''
+- gitops_path:
+    default: ''
+- fence_config_path:
+    default: ''
+- google_client_id:
+    default: ''
+- google_client_secret:
+    default: ''
+- fence_access_key:
+    default: ''
+- fence_secret_key:
+    default: ''
+- upload_bucket:
+    default: ''
+- waf_arn:
+    default: ''
+- namespace:
+    default: default
+- deploy_gen3:
+    default: false

@@ -1,0 +1,48 @@
+variable:
+- ami_account_id:
+    default: 099720109477
+- aws_account_id:
+    default: '433568766270'
+- aws_region:
+    default: us-east-1
+- vpc_id:
+    default: vpc-e2b51d99
+- vpc_subnet_id:
+    default: subnet-6127013c
+- vpc_cidr_list:
+    type: ${list(string)}
+    default:
+    - 10.128.0.0/20
+    - 54.0.0.0/8
+    - 52.0.0.0/8
+- ssh_key_name: {}
+- environment:
+    default: CSOC
+- instance_type:
+    default: t2.micro
+- image_name_search_criteria:
+    default: ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-*
+- extra_vars:
+    type: ${list(string)}
+- bootstrap_path: {}
+- bootstrap_script: {}
+- vm_name: {}
+- vm_hostname: {}
+- proxy:
+    default: true
+- authorized_keys:
+    default: files/authorized_keys/ops_team
+- organization_name:
+    description: For tagging purposes
+    default: Basic Service
+- branch:
+    default: master
+- user_policy:
+    default: "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n     \
+      \ \"Action\": [\n        \"logs:PutLogEvents\"\n      ],\n      \"Effect\":\
+      \ \"Allow\",\n      \"Resource\": [\"*\"],\n      \"Sid\": \"\"\n    }\n  ]\n\
+      }"
+- activation_id:
+    default: ''
+- customer_id:
+    default: ''

@@ -1,6 +1,0 @@
----
-output:
-  - vpc_id:
-    value: ${module.demolab.vpc_id}
-  - iplist:
-    value: ${module.demolab.iplist}

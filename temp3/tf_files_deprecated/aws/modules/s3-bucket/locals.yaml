@@ -1,3 +1,0 @@
----
-locals:
-  clean_bucket_name: ${replace(replace(var.bucket_name, "_", "-"),".", "-")}

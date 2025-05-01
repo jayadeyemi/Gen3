@@ -1,4 +1,0 @@
----
-locals:
-  cidrs: '${split(",", var.secondary_cidr_block != "" ? join(",", list(var.env_vpc_cidr, var.peering_cidr, var.secondary_cidr_block)) : join(",", list(var.env_vpc_cidr, var.peering_cidr)))}'
-  cidrs2: '${split(",", var.secondary_cidr_block != "" ? join(",", list(var.env_vpc_cidr, var.secondary_cidr_block)) : join(",", list(var.env_vpc_cidr)))}'

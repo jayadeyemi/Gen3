@@ -1,6 +1,0 @@
----
-module:
-  - elb_logs:
-    source: ../modules/s3-logs
-    log_bucket_name: logs-${var.vpc_name}-gen3
-    environment: ${var.vpc_name}

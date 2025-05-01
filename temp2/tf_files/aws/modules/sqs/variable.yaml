@@ -1,5 +1,0 @@
----
-variable:
-  - sqs_name: {}
-  - slack_webhook:
-    default: ''

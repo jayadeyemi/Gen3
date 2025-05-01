@@ -1,6 +1,0 @@
----
-variable:
-  - opensearch_cluster_arn: {}
-  - environment: {}
-  - oidc_provider_url: {}
-  - oidc_provider_arn: {}

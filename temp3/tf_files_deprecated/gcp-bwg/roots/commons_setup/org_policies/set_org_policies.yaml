@@ -1,6 +1,0 @@
----
-module:
-  set_org_policies:
-    source: ../../../modules/org/policies
-    org_id_org_policies: ${data.google_organization.org.id}
-    constraint: ${var.constraint}
