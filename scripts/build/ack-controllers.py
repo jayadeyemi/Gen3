@@ -32,6 +32,7 @@ global:
   awsRegion: "us-east-1"
   awsEndpointUrl: ""
 
+controller:
   namespace: ack-system
   replicas: 1
 
@@ -46,7 +47,7 @@ global:
 
   leaderElection:
     enabled: false
-    namespace: ack-system
+    namespace: leader-election-namespace
 
   image:
     repository: controller
@@ -115,6 +116,7 @@ wafv2:
 add_value_override(values_overrides, controller, glob_values_stub1)
 
 glob_template_stub1_1 = """{{- $g := .Values.global -}}
+{{- $c := .Values.controller -}}
 {{- range .Dependencies }}
 {{- if .Enabled }}
 
@@ -122,19 +124,19 @@ glob_template_stub1_1 = """{{- $g := .Values.global -}}
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: {{ $g.namespace }}
+  name: {{ $c.namespace }}
 
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ack-{{ .Name }}-controller
-  namespace: {{ $g.namespace }}
+  namespace: {{ $c.namespace }}
   labels:
     app.kubernetes.io/name: ack-{{ .Name }}-controller
     app.kubernetes.io/part-of: {{}}
 spec:
-  replicas: {{ $g.replicas }}
+  replicas: {{ $c.replicas }}
   selector:
     matchLabels:
       app.kubernetes.io/name: ack-{{ .Name }}-controller
@@ -150,54 +152,54 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
       - name: controller
-        image: {{ $g.image.repository }}:{{ $g.image.tag }}
+        image: {{ $c.image.repository }}:{{ $c.image.tag }}
         args:
         - --aws-region
         - "{{ $g.awsRegion }}"
         - --aws-endpoint-url
         - "{{ $g.awsEndpointUrl }}"
-        - --enable-development-logging={{ $g.enableDevelopmentLogging }}
+        - --enable-development-logging={{ $c.enableDevelopmentLogging }}
         - --log-level
-        - "{{ $g.logLevel }}"
+        - "{{ $c.logLevel }}"
         - --watch-namespace
-        - "{{ $g.watchNamespace }}"
+        - "{{ $c.watchNamespace }}"
         - --reconcile-default-max-concurrent-syncs
-        - "{{ $g.reconcileDefaultMaxConcurrentSyncs }}"
+        - "{{ $c.reconcileDefaultMaxConcurrentSyncs }}"
         - --feature-gates
-        - "{{ $g.featureGates }}"
+        - "{{ $c.featureGates }}"
         - --resource-tags
-        - "{{ $g.resourceTags }}"
-        - --enable-leader-election={{ $g.leaderElection.enabled }}
+        - "{{ $c.resourceTags }}"
+        - --enable-leader-election={{ $c.leaderElection.enabled }}
         - --leader-election-namespace
-        - "{{ $g.leaderElection.namespace }}"
+        - "{{ $c.leaderElection.namespace }}"
         env:
         - name: AWS_REGION
           value: "{{ $g.awsRegion }}"
         - name: AWS_ENDPOINT_URL
           value: "{{ $g.awsEndpointUrl }}"
         - name: ACK_ENABLE_DEVELOPMENT_LOGGING
-          value: "{{ $g.enableDevelopmentLogging }}"
+          value: "{{ $c.enableDevelopmentLogging }}"
         - name: ACK_LOG_LEVEL
-          value: "{{ $g.logLevel }}"
+          value: "{{ $c.logLevel }}"
         - name: ACK_RESOURCE_TAGS
-          value: "{{ $g.resourceTags }}"
+          value: "{{ $c.resourceTags }}"
         - name: ACK_WATCH_NAMESPACE
-          value: "{{ $g.watchNamespace }}"
+          value: "{{ $c.watchNamespace }}"
         - name: ENABLE_LEADER_ELECTION
-          value: "{{ $g.leaderElection.enabled }}"
+          value: "{{ $c.leaderElection.enabled }}"
         - name: LEADER_ELECTION_NAMESPACE
-          value: "{{ $g.leaderElection.namespace }}"
+          value: "{{ $c.leaderElection.namespace }}"
         - name: RECONCILE_DEFAULT_MAX_CONCURRENT_SYNCS
-          value: "{{ $g.reconcileDefaultMaxConcurrentSyncs }}"
+          value: "{{ $c.reconcileDefaultMaxConcurrentSyncs }}"
         - name: FEATURE_GATES
-          value: "{{ $g.featureGates }}"
+          value: "{{ $c.featureGates }}"
         resources:
           requests:
-            cpu: {{ $g.resources.requests.cpu }}
-            memory: {{ $g.resources.requests.memory }}
+            cpu: {{ $c.resources.requests.cpu }}
+            memory: {{ $c.resources.requests.memory }}
           limits:
-            cpu: {{ $g.resources.limits.cpu }}
-            memory: {{ $g.resources.limits.memory }}
+            cpu: {{ $c.resources.limits.cpu }}
+            memory: {{ $c.resources.limits.memory }}
 
 {{- end }}
 {{- end }}
