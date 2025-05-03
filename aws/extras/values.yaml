@@ -1,0 +1,20 @@
+enabled: true
+
+route53:
+  privateZones:
+    - name: internal.io
+      vpcSelector: "{{ .Values.vpc.name }}"
+
+flowLogs:
+  # piggy‑backs on network.vpc.flowLogs but lets you tune extra pieces
+  iamRoleCreate:  true
+  retentionDays:  30
+
+cloudwatch:
+  logGroupRetention: 14
+
+peeringChecksLambda:
+  enabled:  false     # :contentReference[oaicite:36]{index=36}:contentReference[oaicite:37]{index=37}
+  subnetMode: private
+  timeout:   45
+  domainTest: example.com

@@ -1,0 +1,4 @@
+dependencies:
+  - name: _globals
+    repository: file://../_globals
+    version: 0.1.0

@@ -1,0 +1,41 @@
+enabled: true
+
+rds:
+  # per‑service DB sizes (GiB) and instance classes
+  fence:
+    size:     10             # :contentReference[oaicite:26]{index=26}:contentReference[oaicite:27]{index=27}
+    instance: db.t3.small    # :contentReference[oaicite:28]{index=28}:contentReference[oaicite:29]{index=29}
+    password: ""             # sensitive
+  sheepdog:
+    size:     10
+    instance: db.t3.small
+    password: ""
+  indexd:
+    size:     10
+    instance: db.t3.small
+    password: ""
+
+aurora:
+  deploy:            false
+  clusterIdentifier: aurora-cluster           # :contentReference[oaicite:30]{index=30}:contentReference[oaicite:31]{index=31}
+  engine:            aurora-postgresql
+  engineVersion:     13.7
+  storageEncrypted:  true
+
+elasticsearch:
+  deploy:            true
+  domainName:        ""   # leave blank for auto "<vpc>-gen3-metadata"
+  instanceType:      m4.large.elasticsearch   # :contentReference[oaicite:32]{index=32}:contentReference[oaicite:33]{index=33}
+  instanceCount:     3
+  ebsVolumeSize:     20
+  encryptionAtRest:  true
+  version:           "7.10"                  # :contentReference[oaicite:34]{index=34}:contentReference[oaicite:35]{index=35}
+  linkServiceRole:   true
+
+s3:
+  manifestBuckets:
+    - nameSuffix:   manifestservice
+      aesEncryption: false
+      kmsKeyId:     ""
+      versioning:   false
+      publicAccessBlock: true

@@ -1,9 +1,0 @@
-
-spec:
-  description: encryption/decryption key for kubernetes
-  enableKeyRotation: true
-  tags:
-  - tagKey: Environment
-    tagValue: Commons1
-  - tagKey: Organization
-    tagValue: Basic Services

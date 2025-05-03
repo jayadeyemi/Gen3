@@ -1,0 +1,5 @@
+dependencies:
+  - name: ack-controllers          # CRDs + Deployments
+    repository: file://../ack-controllers
+    version: 0.1.0
+    condition: ack-controllers.enabled

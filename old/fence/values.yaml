@@ -1,0 +1,6 @@
+# values.yaml
+vpcName: my-vpc
+# List of bucket ARNs to grant extra access
+bucketAccessArns:
+  - arn:aws:s3:::bucket-foo
+  - arn:aws:s3:::bucket-bar

@@ -1,4 +1,0 @@
-variable:
-- bucket_name: {}
-- configure_bucket_notifications:
-    default: true

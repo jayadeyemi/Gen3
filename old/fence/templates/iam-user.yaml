@@ -1,0 +1,7 @@
+{{- $name := printf "%s-fence-bot" .Values.vpcName -}}
+apiVersion: iam.services.k8s.aws/v1alpha1
+kind: User
+metadata:
+  name: fence-bot-{{ .Values.vpcName }}
+spec:
+  userName: {{ $name | quote }}

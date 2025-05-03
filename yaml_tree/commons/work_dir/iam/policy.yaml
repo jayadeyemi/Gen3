@@ -1,7 +1,0 @@
-# This bucket is in the 'bionimbus' account -
-# user.yaml read bucket policy
-spec:
-  description: Read cdis-gen3-users/dev
-  name: bucket_reader_cdis-gen3-users_Commons1
-  path: ${string_fill}
-  policyDocument: ${data.aws_iam_policy_document.configbucket_reader.json}

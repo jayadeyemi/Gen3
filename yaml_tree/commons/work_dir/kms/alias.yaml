@@ -1,3 +1,0 @@
-spec:
-  name: alias/Commons1-k8s
-  targetKeyID: ${aws_kms_key.kube_key.key_id}

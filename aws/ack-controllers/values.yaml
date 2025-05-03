@@ -1,0 +1,13 @@
+# Toggle exactly the ACK controllers you need in this stack
+controllerToggles:
+  vpc:            true   # ec2‑vpc controller
+  ec2:            true
+  iam:            true
+  rds:            true
+  s3:             true
+  kms:            true
+  route53:        true
+  autoscaling:    false
+  elasticsearch:  false
+  sns:            false
+  sqs:            false

@@ -1,0 +1,38 @@
+{{- range $idx, $arn := .Values.bucketAccessArns }}
+{{- $policyName := printf "%s-fence-bot_policy_%d" $.Values.vpcName $idx -}}
+apiVersion: iam.services.k8s.aws/v1alpha1
+kind: Policy
+metadata:
+  name: fence-bot-extra-policy-{{ $.Values.vpcName }}-{{ $idx }}
+spec:
+  policyName: {{ $policyName | quote }}
+  users:
+    - userName: {{ printf "%s-fence-bot" $.Values.vpcName | quote }}
+  policyDocument: |
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Action": [
+            "s3:PutObject",
+            "s3:GetObject",
+            "s3:DeleteObject"
+          ],
+          "Effect": "Allow",
+          "Resource": ["{{ $arn }}/*"]
+        },
+        {
+          "Action": [
+            "s3:List*",
+            "s3:Get*"
+          ],
+          "Effect": "Allow",
+          "Resource": [
+            "{{ $arn }}/*",
+            "{{ $arn }}"
+          ]
+        }
+      ]
+    }
+---
+{{- end }}

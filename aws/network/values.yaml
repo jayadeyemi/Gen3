@@ -1,0 +1,25 @@
+enabled: true          # phase‑toggle for umbrella chart
+
+vpc:
+  name:          Commons1          # :contentReference[oaicite:0]{index=0}:contentReference[oaicite:1]{index=1}
+  cidrBlock:     172.24.17.0/20    # :contentReference[oaicite:2]{index=2}:contentReference[oaicite:3]{index=3}
+  secondaryCidr: ""                # :contentReference[oaicite:4]{index=4}:contentReference[oaicite:5]{index=5}
+  flowLogs:
+    enabled:    false              # :contentReference[oaicite:6]{index=6}:contentReference[oaicite:7]{index=7}
+    trafficType: ALL               # :contentReference[oaicite:8]{index=8}:contentReference[oaicite:9]{index=9}
+
+peering:
+  cidr:          10.128.0.0/20     # :contentReference[oaicite:10]{index=10}:contentReference[oaicite:11]{index=11}
+  peerVpcId:     vpc-e2b51d99      # :contentReference[oaicite:12]{index=12}:contentReference[oaicite:13]{index=13}
+  create:        true
+
+subnets:
+  # leave blank to let the chart compute /24s across AZs
+  private:  []
+  public:   []
+
+availabilityZones: "us-east-1a,us-east-1c,us-east-1d"   # :contentReference[oaicite:14]{index=14}:contentReference[oaicite:15]{index=15}
+
+tags:
+  Environment:  "{{ .Values.vpc.name }}"
+  Organization: "Basic Service"        # :contentReference[oaicite:16]{index=16}:contentReference[oaicite:17]{index=17}

@@ -1,0 +1,15 @@
+apiVersion: v2
+name: fence-bot-user
+description: |
+  A Helm chart to deploy an AWS IAM User, AccessKey, and associated Policies
+  for the “fence-bot” service, using the AWS Controllers for Kubernetes (ACK) iam-controller.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - aws
+  - iam
+  - ack
+  - fence-bot
+maintainers:
+  - name: Jimi Adeyemi

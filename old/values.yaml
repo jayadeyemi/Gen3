@@ -1,0 +1,314 @@
+# ──────────── VPC & Networking ────────────
+vpc:
+  name: "Commons1"
+  cidrBlock: "172.24.17.0/20"
+  secondaryCidrBlock: ""
+  peering:
+    enabled: false           # var.csoc_peering
+    vpcId: "vpc-e2b51d99"
+    cidr: "10.128.0.0/20"
+  flowLogs:
+    enabled: false           # var.vpc_flow_logs
+    trafficType: "ALL"       # var.vpc_flow_traffic
+  enableEndpoints: true     # var.enable_vpc_endpoints
+
+# ──────────── AWS Account & Region ────────────
+aws:
+  region: "us-east-1"
+  accountId: "433568766270"
+  amiAccountId: "137112412989"
+  certName: "AWS-CERTIFICATE-NAME"
+  fips:
+    enabled: false
+    kmsKeyArn: "arn:aws:kms:us-east-1:707767160287:key/mrk-697897f040ef45b0aa3cebf38a916f99"
+    enabledAmi: "ami-0de87e3680dcb13ec"
+
+# ──────────── IAM & OIDC ────────────
+iam:
+  adminRoleName: "csoc_adminvm"
+  serviceAccount: true                      # var.iam-serviceaccount
+  oidc:
+    thumbprints:
+      - "9e99a48a9960b14926bb7f3b02e22da2b0ab7280"
+    fipsEnabled: false
+
+# ──────────── Cluster & EKS ────────────
+cluster:
+  computedName: ""                          # from locals.cluster_name
+  eks:
+    deploy: true                            # var.deploy_eks
+    version: "1.31"
+    publicAccess: true                      # var.eks_public_access
+  availabilityZones:
+    primary:
+      - "us-east-1a"
+      - "us-east-1c"
+      - "us-east-1d"
+    secondary:
+      - "us-east-1a"
+      - "us-east-1b"
+      - "us-east-1c"
+      - "us-east-1d"
+  nodePools:
+    jupyter:
+      deploy: true                          # var.deploy_jupyter
+      singleAZ: false                       # var.single_az_for_jupyter
+      instanceType: "t3.large"
+      driveSize: 30
+      asg:
+        min: 0
+        desired: 0
+        max: 10
+      bootstrapScript: "bootstrap-with-security-updates.sh"
+    workflow:
+      deploy: false                         # var.deploy_workflow
+      instanceType: "t3.2xlarge"
+      driveSize: 30
+      asg:
+        min: 0
+        desired: 0
+        max: 50
+      bootstrapScript: "bootstrap.sh"
+
+# ──────────── SSH Access ────────────
+ssh:
+  keyName: ""                               # var.ec2_keyname
+  kubeKey: ""                               # var.kube_ssh_key
+  additionalKeys: ""                        # var.kube_additional_keys
+
+# ──────────── Proxies & Squid ────────────
+proxy:
+  singleInstance:
+    enabled: true                           # var.deploy_single_proxy
+    instanceType: "t2.micro"
+  ha:
+    enabled: false                          # var.deploy_ha_squid
+    instanceType: "t3.medium"
+    driveSize: 25
+    cluster:
+      minSize: 1
+      desiredCapacity: 2
+      maxSize: 3
+    bootstrapScript: "squid_running_on_docker.sh"
+    extraVars:
+      - "squid_image=master"
+  imageCriteria: "al2023-ami-*"
+  nlbEndpointServiceName: "com.amazonaws.vpce.us-east-1.vpce-svc-0ce2261f708539011"
+
+# ──────────── RDS & Aurora ────────────
+rds:
+  deploy: true                             # var.deploy_rds
+  instanceStorageEncrypted: true           # var.rds_instance_storage_encrypted
+  engineVersion: "13"
+  autoMinorVersionUpgrade: true
+  backup:
+    retentionDays: 10
+    window: "02:00-03:00"
+  maintenanceApplyImmediate: true          # var.apply_immediate
+  serverlessV2:
+    minCapacity: "0.5"
+    maxCapacity: "10.0"
+  skipFinalSnapshot: false
+  finalSnapshotIdentifier: "aurora-cluster-snapshot-final"
+
+aurora:
+  deploy: false                            # var.deploy_aurora
+  clusterIdentifier: "aurora-cluster"
+  instanceIdentifier: "aurora-cluster-instance"
+  instanceClass: "db.serverless"
+  engine: "aurora-postgresql"
+  engineVersion: "13.7"
+  masterUsername: "postgres"
+  passwordLength: 32
+  kmsKeyId: ""                             # var.db_kms_key_id
+
+# ──────────── Databases ────────────
+databases:
+  fence:
+    deploy: true                           # var.deploy_fence_db
+    size: 10
+    instanceClass: "db.t3.small"
+    snapshot: ""
+    name: "fence"
+    username: "fence_user"
+    password: ""                           # var.db_password_fence
+    autoMinorVersionUpgrade: true
+    allowMajorVersionUpgrade: true
+    backup:
+      retentionDays: 4
+      window: "06:00-06:59"
+    maintenanceWindow: "SAT:09:00-SAT:09:59"
+    preventDestroy: true
+    ignoreChanges:
+      - engine_version
+      - storage_encrypted
+      - identifier
+
+  peregrine:
+    snapshot: ""
+    password: ""                           # var.db_password_peregrine
+
+  sheepdog:
+    deploy: true                           # var.deploy_sheepdog_db
+    size: 10
+    instanceClass: "db.t3.small"
+    snapshot: ""
+    name: "gdcapi"
+    username: "sheepdog"
+    password: ""                           # var.db_password_sheepdog
+    secretKey: ""                          # var.sheepdog_secret_key
+    indexdPassword: ""                     # var.sheepdog_indexd_password
+    oauth2:
+      clientId: ""                         # deprecated
+      clientSecret: ""
+    ha: false                              # var.sheepdog_ha
+    autoMinorVersionUpgrade: true
+    allowMajorVersionUpgrade: true
+    backup:
+      retentionDays: 4
+      window: "07:00-07:59"
+    maintenanceWindow: "SAT:10:00-SAT:10:59"
+    preventDestroy: true
+    ignoreChanges:
+      - engine_version
+      - storage_encrypted
+      - identifier
+
+  indexd:
+    deploy: true                           # var.deploy_indexd_db
+    size: 10
+    instanceClass: "db.t3.small"
+    snapshot: ""
+    name: "indexd"
+    username: "indexd_user"
+    password: ""                           # var.db_password_indexd
+    ha: false                              # var.indexd_ha
+    autoMinorVersionUpgrade: true
+    allowMajorVersionUpgrade: true
+    backup:
+      retentionDays: 4
+      window: "08:00-08:59"
+    maintenanceWindow: "SAT:11:00-SAT:11:59"
+    preventDestroy: true
+    ignoreChanges:
+      - engine_version
+      - storage_encrypted
+      - identifier
+
+# ──────────── Elasticsearch ────────────
+elasticsearch:
+  deploy: true                            # var.deploy_es
+  name: ""
+  version: "6.8"
+  instanceType: "m4.large.elasticsearch"
+  instanceCount: 3
+  ebsVolumeSizeGb: 20
+  encryptionEnabled: true                 # var.encryption
+  linkedRole: true                        # var.es_linked_role
+  deployRole: false                       # var.deploy_es_role
+
+# ──────────── Helm Chart Toggles ────────────
+gen3:
+  deploy: false                           # var.deploy_gen3
+  services:
+    ambassador: true
+    arborist: true
+    argo: true
+    audit: true
+    dbgap: false
+    datadog: false                        # var.dd_enabled
+    awsEsProxy: true
+    dictionaryUrl: ""
+    dispatcherJobs: 10
+    fence: true
+    guppy: true
+    hatchery: true
+    indexd: true
+    indexdPrefix: "dg.XXXX/"
+    ingress: true
+    manifestservice: true
+    metadata: true
+    netpolicy: false
+    peregrine: true
+    pidgin: true
+    portal:
+      enabled: true
+      appEnv: "dev"                       # var.portal_app
+    publicDatasets: false
+    requestor: true
+    revproxy:
+      enabled: true
+      arn: ""
+    ssjdispatcher: true
+    slackDbgap: false
+    tierAccess:
+      level: "private"
+      limit: 100
+    usersync:
+      enabled: true
+      schedule: "*/30 * * * *"
+      yamlS3Path: "https://s3.amazonaws.com/dictionary-artifacts/datadictionary/develop/schema.json"
+    wts: true
+
+# ──────────── GitOps & CI/CD ────────────
+gitops:
+  path: "https://github.com/uc-cdis/cdis-manifest.git"
+argocd:
+  deploy: true
+  version: "7.8.2"
+externalSecretsOperator:
+  deploy: true
+  version: "0.14.0"
+ci:
+  run: false
+
+# ──────────── Mail & Notifications ────────────
+mailgun:
+  apiKey: ""
+  smtpHost: "smtp.mailgun.org"
+  apiUrl: "https://api.mailgun.net/v3/"
+notifications:
+  slack:
+    primaryWebhook: ""
+    secondaryWebhook: ""
+  sns:
+    topicArn: "arn:aws:sns:us-east-1:433568766270:planx-csoc-alerts-topic"
+alarms:
+  deploy: true
+  threshold: 85
+
+# ──────────── Miscellaneous & UX ────────────
+hostname: "dev.bionimbus.org"
+config:
+  folder: "dev"
+branch: "master"
+kernel: "N/A"
+cidrsToRouteToGw: []
+organizationName: "Basic Services"
+namespace: "default"
+usersBucketName: "cdis-gen3-users"
+usersPolicy: {}
+commonsLogRetention: 3653
+k8sBootstrapResources: true
+spotLinkedRole: false
+
+# ──────────── WAF & Security Rules ────────────
+waf:
+  deploy: false
+  baseRules:
+    - managedRuleGroupName: "AWSManagedRulesAmazonIpReputationList"
+      priority: 0
+      overrideToCount:
+        - "AWSManagedReconnaissanceList"
+    - managedRuleGroupName: "AWSManagedRulesPHPRuleSet"
+      priority: 1
+      overrideToCount:
+        - "PHPHighRiskMethodsVariables_HEADER"
+        - "PHPHighRiskMethodsVariables_QUERYSTRING"
+        - "PHPHighRiskMethodsVariables_BODY"
+    - managedRuleGroupName: "AWSManagedRulesWordPressRuleSet"
+      priority: 2
+      overrideToCount:
+        - "WordPressExploitableCommands_QUERYSTRING"
+        - "WordPressExploitablePaths_URIPATH"
+  additionalRules: []

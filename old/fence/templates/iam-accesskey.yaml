@@ -1,0 +1,8 @@
+{{- $user := printf "%s-fence-bot" .Values.vpcName -}}
+apiVersion: iam.services.k8s.aws/v1alpha1
+kind: AccessKey
+metadata:
+  name: fence-bot-user-key-{{ .Values.vpcName }}
+spec:
+  # Reference the ACK User CR you just created
+  userName: {{ $user | quote }}

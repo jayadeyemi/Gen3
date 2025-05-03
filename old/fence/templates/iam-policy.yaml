@@ -1,0 +1,37 @@
+{{- $policyName := printf "%s-fence-bot_policy" .Values.vpcName -}}
+apiVersion: iam.services.k8s.aws/v1alpha1
+kind: Policy
+metadata:
+  name: fence-bot-policy-{{ .Values.vpcName }}
+spec:
+  policyName: {{ $policyName | quote }}
+  # Attach to the ACK User
+  users:
+    - userName: {{ printf "%s-fence-bot" .Values.vpcName | quote }}
+  policyDocument: |
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Action": [
+            "s3:PutObject",
+            "s3:GetObject",
+            "s3:DeleteObject"
+          ],
+          "Effect": "Allow",
+          "Resource": ["${data.aws_s3_bucket.data-bucket.arn}/*"]
+        },
+        {
+          "Action": [
+            "s3:List*",
+            "s3:Get*"
+          ],
+          "Effect": "Allow",
+          "Resource": [
+            "${data.aws_s3_bucket.data-bucket.arn}/*",
+            "${data.aws_s3_bucket.data-bucket.arn}"
+          ]
+        }
+      ]
+    }
+    
