@@ -4,7 +4,7 @@ from string import Template
 # Descriptions for controllers
 controller = "network"
 description = "Chart for Network Resources on AWS"
-add_description_override(full_descriptions, controller, description)
+add_description_stub(description_overrides, controller, description)
 
 # insert controller name into chart stub
 ntwk_chart_stub1 = Template("""apiVersion: v2
@@ -13,77 +13,135 @@ description: $descriptions
 version: 0.1.0
 appVersion: "latest"
 dependencies:
-  - name: _globals
-    repository: file://../_globals
-    version: 0.1.0
+  - name: ack-controllers
+    version: 46.22.5
+    repository: "file://../ack-controllers"
 """)
 ntwk_chart_stub1 = ntwk_chart_stub1.substitute(controller=controller, descriptions=description)
-add_value_override(chart_overrides, controller, ntwk_chart_stub1)
+add_chart_stub(chart_overrides, controller, ntwk_chart_stub1)
 
-ntwk_values_stub1 = """enabled: true
+ntwk_values_stub1 = """global:
+  enabled: true
+  vpcName: "Commons1"
+  organization: "Basic Service"
+  awsRegion: "us-east-1"
+  awsEndpointUrl: ""
 
-# ──────────────────────────────────────────────────────────────────
-# VPC & basic networking
-# ──────────────────────────────────────────────────────────────────
 vpc:
-  cidrBlock:           172.24.17.0/20
-  secondaryCidrBlock:  ""
-  flowLogs:
-    enabled:          false
-    trafficType:      ALL
-  peering:
-    cidr:             10.128.0.0/20
-    peerVpcId:        vpc-e2b51d99
-    create:           true
-  csocManaged:        true
+  enabled: true
+  cidrBlock: ["10.0.0.0/16"]
+  tags:
+    Environment: "prod"
+    Organization: "MyOrg"
 
-sshKeyName:            ""
-csocAccountId:         "433568766270"
+flowLogs:
+  enabled: true
+  trafficType: ALL
+  iamRoleARN: ""  # Add the ARN for Flow Logs role
+  logGroupARN: "" # Add the ARN for Flow Logs log group
 
-# ha‑squid / proxy
-squid:
-  deployHa:            false
-  deploySingle:        false
-  instanceType:        t3.medium
-  instanceDriveSize:   8
-  imageSearch:         "ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-*"
-  bootstrapScript:     squid_running_on_docker.sh
-  extraVars:           ""
-  branch:              master
+natGateway:
+  enabled: true
+  allocationID: ""  # Add your EIP allocation ID
+  subnetID: ""      # Add the subnet ID where the NAT gateway will live
 
-# Route 53 private zone
 route53:
-  internalZoneId:      ""
+  enabled: true
+  domain: "internal.example.com"
 
-# Flow‑log IAM toggle (if you prefer separate role here)
-flowLogIam:
-  createRole:          true
+squid:
+  enabled: false
+  availabilityZones: ["us-east-1a", "us-east-1b"]
+  proxySubnet: "10.0.10.0/24"
+  envVpcID: "vpc-abc123"
+  envSquidName: "squid"
+  organizationName: "MyOrg"
+  networkExpansion: false
+  mainPublicRoute: "rtb-012345"
+
+csoc:
+  enabled: false
+  pcxID: ""
+  vpcName: ""
+  organizationName: "MyOrg"
+
+eks:
+  enabled: false
+  vpcID: ""
+  azList: ["us-east-1a", "us-east-1b"]
+  workersSubnetSize: 24
+  secondaryCidrBlock: ""
+  controlPlaneSG: ""
+  nodepoolSG: ""
+  cidrsToRoute: []
+  endpoints:
+    - ec2
+    - sts
+    - autoscaling
+    - ecr-dkr
+    - ecr-api
+    - ebs
+    - logs
+
+secondary_cidr_block: ""  # Optional CIDR block for secondary VPC associations
+peering_cidr: ""          # CIDR block for VPC peering
+
+csoc_managed: false
+csoc_account_id: "123456789012"
+peering_vpc_id: "vpc-abcdef"
 """
-add_value_override(values_overrides, controller, ntwk_values_stub1)
+add_values_stub(values_overrides, controller, ntwk_values_stub1)
 
-vpc_vpc_stub1_1 = """{{- if .Values.enabled }}
+vpc_template_stub1_1 = """{{- if .Values.vpc.enabled }}
 apiVersion: ec2.services.k8s.aws/v1alpha1
 kind: VPC
 metadata:
-  name: {{ .Release.Name }}-vpc
+  name: {{ include "network.fullname" . }}-vpc
+  labels:
+    {{- include "network.labels" . | nindent 4 }}
+  namespace: {{ .Release.Namespace }}-network
 spec:
-  cidrBlock: {{ .Values.vpc.cidrBlock | quote }}
+  scope: Cluster
+  cidrBlocks:
+    - {{ .Values.vpc.cidrBlock }}
+  tags:
+    {{- range $k, $v := .Values.vpc.tags }}
+    - key: {{ $k }}
+      value: {{ $v | quote }}
+    {{- end }}
 {{- end }}
 """
-add_template_stub(template_overrides, controller, "vpc.yaml", vpc_vpc_stub1_1)
+add_template_stub(template_overrides, controller, "vpc.yaml", vpc_template_stub1_1)
 
-vpc_subnet_stub1_2 = """{{- if .Values.enabled }}
-{{- range .Values.subnets }}
-apiVersion: ec2.services.k8s.aws/v1alpha1
-kind: Subnet
-metadata:
-  name: {{ .name }}
-spec:
-  cidrBlock: {{ .cidrBlock | quote }}
-  vpcRef:
-    name: {{ $.Release.Name }}-vpc
-{{- end }}
-{{- end }}
+vpc_template_stub1_2 = """
 """
-add_template_stub(template_overrides, controller, "subnet.yaml", vpc_subnet_stub1_2)
+add_template_stub(template_overrides, controller, "flowlog.yaml", vpc_template_stub1_2)
+
+vpc_template_stub1_3 = """
+"""
+add_template_stub(template_overrides, controller, "natgateway.yaml", vpc_template_stub1_3)
+
+vpc_template_stub1_4 = """
+"""
+add_template_stub(template_overrides, controller, "route53.yaml", vpc_template_stub1_4)
+
+vpc_template_stub1_5 = """
+"""
+add_template_stub(template_overrides, controller, "security_groups.yaml", vpc_template_stub1_5)
+
+vpc_template_stub1_6 = """
+"""
+add_template_stub(template_overrides, controller, "eks_subnets.yaml", vpc_template_stub1_6)
+
+vpc_template_stub1_7 = """
+"""
+add_template_stub(template_overrides, controller, "csoc_peering_connection.yaml", vpc_template_stub1_7)
+
+vpc_template_stub1_8 = """
+"""
+add_template_stub(template_overrides, controller, "db_subnet_group.yaml", vpc_template_stub1_8)
+
+vpc_helper_stub1_1 = """
+"""
+add_template_stub(template_overrides, controller, "helper.tpl", vpc_helper_stub1_1)
 

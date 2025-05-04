@@ -1,0 +1,12 @@
+{{- range $ctrl, $cfg := .Values }}
+  {{- if and (kindIs "map" $cfg) ($cfg.enabled | default false) ($cfg.leaderElection.enabled | default false) }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ $cfg.leaderElection.namespace }}
+  labels:
+    {{- include "ack.labels" $ | nindent 4 }}
+{{- end }}
+{{- end }}
+

@@ -1,0 +1,64 @@
+{{- range $ctrl, $cfg := .Values }}
+  {{- if and (kindIs "map" $cfg) ($cfg.enabled | default false) }}
+    {{- define "ack.ctrlname" -}}
+    {{ printf "%s-%s-ack" .Values.global.vpcName $ctrl }}{{- end -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ack.ctrlname" $ }}
+  namespace: {{ include "ack.fullname" $ }}
+  labels:
+    app.kubernetes.io/name: {{ include "ack.ctrlname" $ }}
+    app.kubernetes.io/part-of:  {{ .Release.Name }}
+spec:
+  replicas: {{ $cfg.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "ack.ctrlname" $ }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "ack.ctrlname" $ }}
+    spec:
+      serviceAccountName: {{ printf "%s-%s-ack-sa" .Values.global.vpcName $ctrl }}
+      containers:
+        - name: controller
+          image: {{ $cfg.image.repository }}:{{ $cfg.image.tag }}
+          args:
+            - --aws-region
+            - {{ $.Values.global.awsRegion | quote }}
+            - --aws-endpoint-url
+            - {{ $.Values.global.awsEndpointUrl | quote }}
+            - --enable-development-logging={{ $cfg.enableDevelopmentLogging }}
+            - --log-level
+            - {{ $cfg.logLevel | quote }}
+            - --resource-tags
+            - {{ $cfg.resourceTags | quote }}
+            - --enable-leader-election={{ $cfg.leaderElection.enabled }}
+            {{- if $cfg.leaderElection.enabled }}
+            - --leader-election-namespace
+            - {{ $cfg.leaderElection.namespace | quote }}
+            {{- end }}
+            - --watch-namespace
+            - {{ include "ack.fullname" $ }}
+          env:
+            - name: WATCH_NAMESPACE
+              value: {{ include "ack.fullname" $ }}
+            - name: AWS_REGION
+              value: {{ $.Values.global.awsRegion | quote }}
+            - name: AWS_ENDPOINT_URL
+              value: {{ $.Values.global.awsEndpointUrl | quote }}
+            - name: ENABLE_DEVELOPMENT_LOGGING
+              value: {{ $cfg.enableDevelopmentLogging | quote }}
+            - name: LOG_LEVEL
+              value: {{ $cfg.logLevel | quote }}
+            - name: ENABLE_LEADER_ELECTION
+              value: {{ $cfg.leaderElection.enabled | quote }}
+            - name: LEADER_ELECTION_NAMESPACE
+              value: {{ $cfg.leaderElection.namespace | quote }}
+
+          resources:
+            {{- toYaml $cfg.resources | nindent 12 }}
+  {{- end }}
+{{- end }}
+

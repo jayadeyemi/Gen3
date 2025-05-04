@@ -1,5 +1,10 @@
+apiVersion: v2
+name: network
+description: Chart for Network Resources on AWS
+version: 0.1.0
+appVersion: "latest"
 dependencies:
-  - name: ack-controllers          # CRDs + Deployments
-    repository: file://../ack-controllers
-    version: 0.1.0
-    condition: ack-controllers.enabled
+  - name: ack-controllers
+    version: 46.22.5
+    repository: "file://../ack-controllers"
+

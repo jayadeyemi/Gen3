@@ -1,0 +1,11 @@
+{{- range $ctrl, $cfg := .Values }}
+  {{- if and (kindIs "map" $cfg) ($cfg.enabled | default false) }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ include "ack.fullname" $ }}
+  labels:
+    name: {{ include "ack.fullname" $ }}
+{{- end }}
+{{- end }}
+

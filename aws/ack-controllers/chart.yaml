@@ -1,4 +1,13 @@
+apiVersion: v2
+name: ack-controllers
+description: Umbrella Chart for all Resources on AWS
+version: 0.1.1
+type: application
+appVersion: "master"
 dependencies:
-  - name: _globals
-    repository: file://../_globals
-    version: 0.1.0
+
+  - name: ack-chart
+    version: 46.22.5
+  
+    repository: oci://public.ecr.aws/aws-controllers-k8s
+  

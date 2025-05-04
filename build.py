@@ -4,7 +4,7 @@ import os
 
 # Base directories
 scripts_dir = "scripts"
-base_dir = os.path.abspath("final/aws/charts")
+base_dir = os.path.abspath("aws")
 # remove base_dir from path to avoid conflicts with the build script
 if base_dir in os.sys.path:
     os.sys.path.remove(base_dir)
@@ -14,31 +14,18 @@ chart_overrides = {}
 values_overrides = {}
 template_overrides = {}
 helper_overrides = {}
-full_descriptions = {}
+description_overrides = {}
+readme_overrides = {}
+notes_overrides = {}
 
 # List of controllers\
 controllers = [
-    'cdis-vpc-wafv2',
-    'vpc-controller',
-    "iam-controller",
-    "rds-controller",
-    "s3-controller",
-    "kms-controller",
-    "ec2-controller",
-    "autoscaling-controller",
-    "sns-controller",
-    "sqs-controller",
-    "cwlogs-controller",
-    "route53-controller",
-    "peering-controller",
-    "secretsmgr-controller",
-    "cloudtrail-controller",
-    "elasticsearch-controller",
-    "wafv2-controller"
+    'ack-controllers',
+    'network',
 ]
 
 # Helper functions
-def add_chart_override(overrides: dict, controller: str, stub: str):
+def add_chart_stub(overrides: dict, controller: str, stub: str):
     """
     Add or overwrite the Chart.yaml stub for `controller`.
     """
@@ -47,7 +34,7 @@ def add_chart_override(overrides: dict, controller: str, stub: str):
     overrides[controller] = stub
 
 
-def add_value_override(overrides: dict, controller: str, stub: str):
+def add_values_stub(overrides: dict, controller: str, stub: str):
     """
     Add or overwrite the values.yaml stub for `controller`.
     """
@@ -55,7 +42,7 @@ def add_value_override(overrides: dict, controller: str, stub: str):
     print(f"{action} values stub for '{controller}'")
     overrides[controller] = stub
 
-def add_description_override(overrides: dict, controller: str, stub: str):
+def add_description_stub(overrides: dict, controller: str, stub: str):
     """
     Add or overwrite the description for `controller`.
     """
@@ -83,36 +70,66 @@ def add_template_stub(templates: dict, controller: str, filename: str, stub: str
     print(f"{action} template stub for '{controller}/{filename}'")
     templates[controller][filename] = stub
 
+def add_readme_stub(overrides: dict, controller: str, filename: str, stub: str):
+    """
+    Add or overwrite the README stub for `controller`.
+    """
+    if controller not in overrides:
+        overrides[controller] = {}
+    action = "Overriding" if filename in overrides[controller] else "Adding"
+    print(f"{action} README stub for '{controller}/{filename}'")
+    overrides[controller][filename] = stub
+
+def add_notes_stub(overrides: dict, controller: str, filename: str, stub: str):
+    """
+    Add or overwrite the NOTES.txt stub for `controller`.
+    """
+    if controller not in overrides:
+        overrides[controller] = {}
+    action = "Overriding" if filename in overrides[controller] else "Adding"
+    print(f"{action} NOTES.txt stub for '{controller}/{filename}'")
+    overrides[controller][filename] = stub
+
 # Shared namespace for executing per-controller scripts
 shared_ns = {
     "__name__": "__main__",
     "chart_overrides": {},
     "values_overrides": {},
     "template_overrides": {},
-    "full_descriptions": {},
+    "description_overrides": {},
     "helper_overrides": {},
-    "add_chart_override": add_chart_override,
-    "add_value_override": add_value_override,
+    "readme_overrides": {},
+    "notes_overrides": {},
+    "add_chart_stub": add_chart_stub,
+    "add_values_stub": add_values_stub,
     "add_template_stub": add_template_stub,
-    "add_description_override": add_description_override,
+    "add_description_stub": add_description_stub,
     "add_helper_stub": add_helper_stub,
+    "add_readme_stub": add_readme_stub,
+    "add_notes_stub": add_notes_stub
 }
 
 # Load and execute each build script into shared_ns
 build_dir = Path(scripts_dir) / "build"
-for script in sorted(build_dir.glob("*.py")):
+script_paths = [build_dir / f"{controller}.py" for controller in controllers]
+
+for script in sorted(script_paths, key=lambda p: p.name):
     code = compile(script.read_text(encoding="utf-8"), str(script), "exec")
     exec(code, shared_ns)
+
 
 # Merge shared results into top-level overrides and descriptions
 chart_overrides.update(shared_ns["chart_overrides"])
 values_overrides.update(shared_ns["values_overrides"])
 template_overrides.update(shared_ns["template_overrides"])
-full_descriptions.update(shared_ns["full_descriptions"])
+description_overrides.update(shared_ns["description_overrides"])
 helper_overrides.update(shared_ns["helper_overrides"])
+readme_overrides.update(shared_ns["readme_overrides"])
+notes_overrides.update(shared_ns["notes_overrides"])
 
 # 2) Populate subcharts with Chart.yaml, values.yaml, and templates
-def populate_subcharts(chart_defs, values_defs, template_files, helper_files, names, base):
+def populate_subcharts(chart_defs, values_defs, template_files, helper_files,
+                       readme_files, notes_files, names, base):
     for name in names:
         chart_dir = Path(base) / name
         if not chart_dir.exists():
@@ -125,9 +142,9 @@ def populate_subcharts(chart_defs, values_defs, template_files, helper_files, na
             print(f"✏️  Wrote Chart.yaml for {name}")
         else:
             # Fallback stub
-            default_desc = full_descriptions.get(name)
+            default_desc = description_overrides.get(name, "No description available.")
             fallback = f"apiVersion: v2\nname: {name}\ndescription: {default_desc}\ntype: application\nversion: 0.1.0\nappVersion: \"latest\"\n"
-            add_chart_override(chart_overrides, name, fallback)
+            add_chart_stub(chart_overrides, name, fallback)
             (chart_dir / "Chart.yaml").write_text(fallback, encoding="utf-8")
             print(f"✏️  Wrote fallback Chart.yaml for {name}")
 
@@ -135,9 +152,15 @@ def populate_subcharts(chart_defs, values_defs, template_files, helper_files, na
         vals = values_defs.get(name)
         if not vals:
             vals = f"# default values for {name}\nenabled: false\n# TODO: fill in specific settings\n"
-            add_value_override(values_overrides, name, vals)
+            add_values_stub(values_overrides, name, vals)
         (chart_dir / "values.yaml").write_text(vals.lstrip() + "\n", encoding="utf-8")
         print(f"✏️  Wrote values.yaml for {name}")
+        
+        # README.md
+        readme = readme_files.get(name)
+        if readme:
+            (chart_dir / "README.md").write_text(readme.lstrip() + "\n", encoding="utf-8")
+            
 
         # templates
         templates = template_files.get(name, {})
@@ -155,5 +178,17 @@ def populate_subcharts(chart_defs, values_defs, template_files, helper_files, na
             (tpl_dir / fname).write_text(content.lstrip() + "\n", encoding="utf-8")
             print(f"✏️  Wrote templates/{fname} for {name}")
 
+        # NOTES.txt
+        notes = notes_files.get(name, {})
+        for fname, content in notes.items():
+            os.makedirs(os.path.join(chart_dir, "templates"), exist_ok=True)
+            (tpl_dir / fname).write_text(content.lstrip() + "\n", encoding="utf-8")
+            print(f"✏️  Wrote templates/{fname} for {name}")
+
+        
+
+
+
 # Execute bootstrapping and populationootstrap_subcharts(controllers, base_dir)
-populate_subcharts(chart_overrides, values_overrides, template_overrides, helper_overrides, controllers, base_dir)
+populate_subcharts(chart_overrides, values_overrides, template_overrides, helper_overrides,
+    readme_overrides, notes_overrides, controllers, base_dir)

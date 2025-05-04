@@ -1,9 +1,0 @@
-dependencies:
-  - name: ack-controllers
-    repository: file://../ack-controllers
-    version: 0.1.0
-    condition: ack-controllers.enabled
-  - name: network
-    repository: file://../network
-    version: 0.1.0
-    condition: network.enabled

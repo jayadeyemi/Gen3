@@ -1,0 +1,6 @@
+dependencies:
+- name: ack-chart
+  repository: oci://public.ecr.aws/aws-controllers-k8s
+  version: 46.22.5
+digest: sha256:ff3391aac2e2a5cd8e0f393813ac90810a6ad0caea12949e9d10b21d4d867c56
+generated: "2025-05-04T17:50:17.426888543-04:00"
