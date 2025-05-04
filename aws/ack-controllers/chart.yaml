@@ -5,9 +5,8 @@ version: 0.1.1
 type: application
 appVersion: "master"
 dependencies:
-
   - name: ack-chart
     version: 46.22.5
-  
+    alias: ack
     repository: oci://public.ecr.aws/aws-controllers-k8s
-  
+
